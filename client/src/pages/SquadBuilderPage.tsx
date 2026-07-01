@@ -4,6 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import type { Player, Position, SlotId } from '../types'
 import { useSquadStore, filledCount, isComplete } from '../store/squadStore'
 import players from '../data/players'
+import FlagImg from '../components/FlagImg'
 import Pitch from '../components/Pitch'
 import PlayerModal from '../components/PlayerModal'
 
@@ -11,20 +12,21 @@ const slotPosition: Record<SlotId, Position> = {
   gk: 'GK', def1: 'DEF', def2: 'DEF', fwd1: 'FWD', fwd2: 'FWD',
 }
 
+const posBadge: Record<Position, { bg: string; color: string }> = {
+  GK:  { bg: 'rgba(234,179,8,0.15)',  color: '#facc15' },
+  DEF: { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa' },
+  FWD: { bg: 'rgba(239,68,68,0.15)',  color: '#f87171' },
+}
+
 export default function SquadBuilderPage() {
   const { connected } = useWallet()
   const navigate = useNavigate()
-
   const { squad, selectedSlot, setPlayer, setSelectedSlot } = useSquadStore()
-
   const [search, setSearch] = useState('')
   const [posFilter, setPosFilter] = useState<Position | 'ALL'>('ALL')
   const [modalPlayer, setModalPlayer] = useState<Player | null>(null)
 
-  if (!connected) {
-    navigate('/')
-    return null
-  }
+  if (!connected) { navigate('/'); return null }
 
   const activePosition: Position | null = selectedSlot ? slotPosition[selectedSlot] : null
   const usedIds = new Set(Object.values(squad).filter(Boolean).map((p) => p!.id))
@@ -55,115 +57,227 @@ export default function SquadBuilderPage() {
   const complete = isComplete(squad)
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-0 min-h-0">
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0, background: '#0a0e1a' }}>
 
-        {/* LEFT — Pitch */}
-        <div className="flex flex-col p-6 border-r border-white/10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-white font-black uppercase tracking-widest text-sm">
-              Build Your Squad
-            </h2>
-            <span className={`text-xs font-bold px-2 py-1 rounded-full ${complete ? 'bg-[#00FF87]/20 text-[#00FF87]' : 'bg-white/10 text-white/50'}`}>
-              {count} / 5
-            </span>
-          </div>
-
-          <Pitch squad={squad} selectedSlot={selectedSlot} onSlotClick={handleSlotClick} />
-
-          {selectedSlot && (
-            <p className="mt-3 text-center text-[#00FF87] text-xs font-bold uppercase tracking-widest animate-pulse">
-              Selecting {slotPosition[selectedSlot]} → pick from the list
-            </p>
-          )}
-
-          {complete && (
-            <button
-              onClick={() => navigate('/my-squad')}
-              className="mt-4 py-3 rounded-xl bg-[#00FF87] text-[#0a0e1a] font-black uppercase tracking-widest hover:bg-[#00cc6e] transition-colors"
-            >
-              Save Squad →
-            </button>
-          )}
+      {/* ── Top bar ─────────────────────────────────── */}
+      <div
+        className="flex items-center justify-between"
+        style={{
+          padding: '12px 24px',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          flexShrink: 0,
+          background: 'rgba(255,255,255,0.02)',
+        }}
+      >
+        {/* Left: title */}
+        <div>
+          <h2 style={{ color: '#fff', fontWeight: 900, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.12em', margin: 0 }}>
+            Build Your Squad
+          </h2>
+          {selectedSlot
+            ? <p style={{ color: '#00FF87', fontSize: '11px', fontWeight: 700, marginTop: '2px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Selecting {slotPosition[selectedSlot]} — pick from the list →
+              </p>
+            : <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '2px', letterSpacing: '0.05em' }}>
+                World Cup 2026 · 5-a-side · Tap a slot on the pitch
+              </p>
+          }
         </div>
 
-        {/* RIGHT — Player List */}
-        <div className="flex flex-col p-6">
-          <h2 className="text-white font-black uppercase tracking-widest text-sm mb-4">Players</h2>
-
-          {/* Search */}
-          <div className="relative mb-3">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30">🔍</span>
-            <input
-              type="text"
-              placeholder="Search player or country..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-[#00FF87]/50"
-            />
-          </div>
-
-          {/* Position Filter */}
-          <div className="flex gap-2 mb-4">
-            {(['ALL', 'GK', 'DEF', 'FWD'] as const).map((pos) => (
-              <button
-                key={pos}
-                onClick={() => setPosFilter(pos)}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
-                  posFilter === pos
-                    ? 'bg-[#00FF87] text-[#0a0e1a]'
-                    : 'bg-white/5 text-white/50 hover:bg-white/10'
-                }`}
-              >
-                {pos}
-              </button>
+        {/* Centre: progress dots */}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: i < count ? '22px' : '8px',
+                  height: '8px',
+                  borderRadius: '4px',
+                  background: i < count ? '#00FF87' : 'rgba(255,255,255,0.12)',
+                  transition: 'all 0.25s ease',
+                }}
+              />
             ))}
           </div>
+          <span style={{ color: complete ? '#00FF87' : 'rgba(255,255,255,0.35)', fontSize: '12px', fontWeight: 900, marginLeft: '4px' }}>
+            {count}/5
+          </span>
+        </div>
 
-          {/* Player rows */}
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1" style={{ maxHeight: '420px' }}>
+        {/* Right: save button */}
+        {complete ? (
+          <button
+            onClick={() => navigate('/my-squad')}
+            style={{
+              background: '#00FF87', color: '#0a0e1a',
+              padding: '8px 20px', borderRadius: '8px',
+              fontWeight: 900, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em',
+              border: 'none', cursor: 'pointer',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#00e07a')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#00FF87')}
+          >
+            Save Squad →
+          </button>
+        ) : (
+          <div style={{ width: '110px' }} />
+        )}
+      </div>
+
+      {/* ── Main columns ────────────────────────────── */}
+      <div className="flex flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+
+        {/* LEFT — Pitch */}
+        <div
+          className="flex flex-col"
+          style={{
+            width: '42%',
+            borderRight: '1px solid rgba(255,255,255,0.07)',
+            padding: '16px',
+            minHeight: 0,
+          }}
+        >
+          <div className="flex-1 min-h-0">
+            <Pitch squad={squad} selectedSlot={selectedSlot} onSlotClick={handleSlotClick} />
+          </div>
+        </div>
+
+        {/* RIGHT — Player list */}
+        <div className="flex flex-col flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+
+          {/* Search + filters */}
+          <div style={{ padding: '14px 20px 0', flexShrink: 0 }}>
+
+            {/* Search */}
+            <div style={{ position: 'relative', marginBottom: '10px' }}>
+              <svg
+                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '15px', height: '15px', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }}
+                fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+              >
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                type="text"
+                placeholder="Search player or country..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '10px',
+                  padding: '9px 12px 9px 36px',
+                  color: '#fff', fontSize: '13px', outline: 'none',
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(0,255,135,0.35)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+              />
+            </div>
+
+            {/* Filter tabs */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              {(['ALL', 'GK', 'DEF', 'FWD'] as const).map((pos) => (
+                <button
+                  key={pos}
+                  onClick={() => setPosFilter(pos)}
+                  style={{
+                    flex: 1, padding: '7px 0',
+                    borderRadius: '8px', border: 'none', cursor: 'pointer',
+                    fontSize: '11px', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.08em',
+                    background: posFilter === pos ? '#00FF87' : 'rgba(255,255,255,0.06)',
+                    color: posFilter === pos ? '#0a0e1a' : 'rgba(255,255,255,0.4)',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {pos}
+                </button>
+              ))}
+            </div>
+
+            {/* Column headers */}
+            <div style={{
+              display: 'flex', alignItems: 'center',
+              padding: '0 4px 8px',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' as const,
+              letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)',
+            }}>
+              <span style={{ flex: 1, paddingLeft: '4px' }}>Player</span>
+              <span style={{ width: '48px', textAlign: 'center' }}>Pos</span>
+              <span style={{ width: '32px' }} />
+            </div>
+          </div>
+
+          {/* Scrollable player rows */}
+          <div className="overflow-y-auto flex-1" style={{ minHeight: 0 }}>
             {filtered.length === 0 ? (
-              <p className="text-white/30 text-sm text-center py-8">No players found</p>
-            ) : (
-              filtered.map((player) => (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '120px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '13px' }}>No players found</p>
+              </div>
+            ) : filtered.map((player, idx) => {
+              const badge = posBadge[player.position]
+              const canQuickAdd = !!(selectedSlot && slotPosition[selectedSlot] === player.position)
+              return (
                 <div
                   key={player.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-[#00FF87]/30 hover:bg-[#00FF87]/5 cursor-pointer transition-all group"
                   onClick={() => setModalPlayer(player)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '10px 20px',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    background: idx % 2 !== 0 ? 'rgba(255,255,255,0.015)' : 'transparent',
+                    transition: 'background 0.12s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,255,135,0.05)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = idx % 2 !== 0 ? 'rgba(255,255,255,0.015)' : 'transparent')}
                 >
-                  <span className="text-2xl">{player.flag}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-bold text-sm truncate">{player.name}</p>
-                    <p className="text-white/40 text-xs">{player.country}</p>
+                  {/* Country flag */}
+                  <FlagImg country={player.country} size={22} shape="rect" />
+
+                  {/* Name + country */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: '#fff', fontWeight: 700, fontSize: '13px', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {player.name}
+                    </p>
+                    <p style={{ color: 'rgba(255,255,255,0.32)', fontSize: '11px', margin: '1px 0 0' }}>
+                      {player.country}
+                    </p>
                   </div>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
-                    player.position === 'GK' ? 'bg-yellow-500/20 text-yellow-400' :
-                    player.position === 'DEF' ? 'bg-blue-500/20 text-blue-400' :
-                    'bg-red-500/20 text-red-400'
-                  }`}>
+
+                  {/* Position badge */}
+                  <span style={{
+                    background: badge.bg, color: badge.color,
+                    padding: '2px 8px', borderRadius: '5px',
+                    fontSize: '10px', fontWeight: 900, letterSpacing: '0.06em',
+                    textTransform: 'uppercase' as const, flexShrink: 0, width: '42px', textAlign: 'center' as const,
+                  }}>
                     {player.position}
                   </span>
+
+                  {/* Add button */}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (selectedSlot && slotPosition[selectedSlot] === player.position) {
-                        handleAddPlayer(player)
-                      } else {
-                        setModalPlayer(player)
-                      }
+                    onClick={(e) => { e.stopPropagation(); if (canQuickAdd) handleAddPlayer(player); else setModalPlayer(player) }}
+                    style={{
+                      width: '26px', height: '26px', borderRadius: '50%', border: 'none',
+                      cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '16px', fontWeight: 900, lineHeight: 1,
+                      background: canQuickAdd ? '#00FF87' : 'rgba(255,255,255,0.08)',
+                      color: canQuickAdd ? '#0a0e1a' : 'rgba(255,255,255,0.45)',
+                      transition: 'all 0.15s',
                     }}
-                    className="w-7 h-7 rounded-full bg-white/10 text-white/50 text-sm hover:bg-[#00FF87] hover:text-[#0a0e1a] transition-colors flex items-center justify-center font-bold"
                   >
                     +
                   </button>
                 </div>
-              ))
-            )}
+              )
+            })}
           </div>
         </div>
       </div>
 
-      {/* Player Modal */}
+      {/* Player detail modal */}
       {modalPlayer && (
         <PlayerModal
           player={modalPlayer}

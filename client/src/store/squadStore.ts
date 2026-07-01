@@ -12,6 +12,7 @@ interface SquadStore {
   setSquadName: (name: string) => void
   lockSquad: () => void
   resetSquad: () => void
+  loadSquad: (squad: Squad, squadName: string, locked: boolean) => void
 }
 
 const emptySquad: Squad = {
@@ -41,6 +42,8 @@ export const useSquadStore = create<SquadStore>((set) => ({
   lockSquad: () => set({ locked: true }),
 
   resetSquad: () => set({ squad: emptySquad, selectedSlot: null, locked: false, squadName: '' }),
+
+  loadSquad: (squad, squadName, locked) => set({ squad, squadName, locked, selectedSlot: null }),
 }))
 
 export const filledCount = (squad: Squad) =>
