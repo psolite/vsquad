@@ -10,6 +10,7 @@ import Navbar from './components/Navbar'
 import LandingPage from './pages/LandingPage'
 import SquadBuilderPage from './pages/SquadBuilderPage'
 import MySquadPage from './pages/MySquadPage'
+import TournamentPage from './pages/TournamentPage'
 
 export default function App() {
   const endpoint = clusterApiUrl('mainnet-beta')
@@ -20,12 +21,13 @@ export default function App() {
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <BrowserRouter>
-            <div className="relative flex flex-col min-h-screen bg-[#0a0e1a]">
+            <div className="relative flex flex-col h-screen overflow-hidden bg-[#0a0e1a]">
               <Navbar />
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/squad" element={<SquadBuilderPage />} />
                 <Route path="/my-squad" element={<MySquadPage />} />
+                <Route path="/tournaments" element={<TournamentPage />} />
               </Routes>
             </div>
           </BrowserRouter>

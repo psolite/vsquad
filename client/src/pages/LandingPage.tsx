@@ -1,15 +1,34 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { useSquadStore } from '../store/squadStore'
+import { squadApi } from '../api/squadApi'
 
 export default function LandingPage() {
-  const { connected } = useWallet()
+  const { connected, publicKey } = useWallet()
   const navigate = useNavigate()
+  const { loadSquad } = useSquadStore()
+  const [checking, setChecking] = useState(false)
 
   useEffect(() => {
-    if (connected) navigate('/squad')
-  }, [connected, navigate])
+    if (!connected || !publicKey) return
+
+    const wallet = publicKey.toBase58()
+    setChecking(true)
+
+    squadApi.get(wallet)
+      .then((record) => {
+        // Existing squad found — restore it and jump straight to /my-squad
+        loadSquad(record.squad, record.squadName, record.locked)
+        navigate('/my-squad')
+      })
+      .catch(() => {
+        // No saved squad — go to builder
+        navigate('/squad')
+      })
+      .finally(() => setChecking(false))
+  }, [connected, publicKey, navigate, loadSquad])
 
   return (
     <div
@@ -98,6 +117,11 @@ export default function LandingPage() {
             style={{ background: '#00FF87', transform: 'scale(1.15)' }}
           />
           <WalletMultiButton />
+          {checking && (
+            <p style={{ color: 'rgba(0,255,135,0.6)', fontSize: '11px', fontWeight: 700, textAlign: 'center', marginTop: '10px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              Loading your squad…
+            </p>
+          )}
         </div>
 
         {/* Stats */}
