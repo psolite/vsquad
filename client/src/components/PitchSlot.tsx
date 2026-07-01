@@ -1,5 +1,6 @@
 import type { Player, SlotId } from '../types'
 import { countryColors, defaultColors } from '../data/countryColors'
+import FlagImg from './FlagImg'
 
 interface Props {
   slotId: SlotId
@@ -107,10 +108,15 @@ export default function PitchSlot({ label, player, isSelected, onClick, onRemove
         </span>
       </div>
 
-      {/* Country + position tag */}
+      {/* Flag + position tag */}
       {player && (
-        <div className="mt-[2px] px-1.5 py-[2px] rounded-sm bg-[#003d18] text-[#00FF87] text-[9px] font-bold flex items-center gap-0.5 leading-none">
-          <span>{player.flag}</span>
+        <div style={{
+          marginTop: '2px', padding: '2px 5px', borderRadius: '3px',
+          background: '#003d18', color: '#00FF87',
+          fontSize: '9px', fontWeight: 700,
+          display: 'flex', alignItems: 'center', gap: '3px', lineHeight: 1,
+        }}>
+          <FlagImg country={player.country} size={10} shape="rect" />
           <span>{player.position}</span>
         </div>
       )}
