@@ -77,11 +77,17 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-row items-center flex-nowrap" style={{ gap: '0.6rem' }}>
-            <span className="px-3 py-1 rounded-full border text-xs font-black uppercase tracking-wider bg-yellow-500/15 text-yellow-400 border-yellow-500/25 whitespace-nowrap">1 GK</span>
-            <span className="text-white/20 font-bold leading-none">·</span>
-            <span className="px-3 py-1 rounded-full border text-xs font-black uppercase tracking-wider bg-blue-500/15 text-blue-400 border-blue-500/25 whitespace-nowrap">2 DEF</span>
-            <span className="text-white/20 font-bold leading-none">·</span>
-            <span className="px-3 py-1 rounded-full border text-xs font-black uppercase tracking-wider bg-red-500/15 text-red-400 border-red-500/25 whitespace-nowrap">2 FWD</span>
+            {[
+              { label: '1 GK',  bg: 'rgba(234,179,8,0.12)',  color: '#facc15', border: 'rgba(234,179,8,0.3)' },
+              { label: '·',     bg: 'transparent',            color: 'rgba(255,255,255,0.2)', border: 'transparent' },
+              { label: '2 DEF', bg: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: 'rgba(59,130,246,0.3)' },
+              { label: '·',     bg: 'transparent',            color: 'rgba(255,255,255,0.2)', border: 'transparent' },
+              { label: '2 FWD', bg: 'rgba(239,68,68,0.12)',  color: '#f87171', border: 'rgba(239,68,68,0.3)' },
+            ].map(({ label, bg, color, border }, i) =>
+              label === '·'
+                ? <span key={i} style={{ color, fontSize: '1rem', fontWeight: 700, lineHeight: 1 }}>·</span>
+                : <span key={i} style={{ background: bg, color, border: `1px solid ${border}`, padding: '6px 16px', borderRadius: '999px', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>{label}</span>
+            )}
           </div>
         </div>
 
