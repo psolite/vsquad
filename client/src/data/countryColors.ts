@@ -64,6 +64,34 @@ export const countryColors: Record<string, CountryColor> = {
   'Iraq':          { primary: '#CE1126', secondary: '#FFFFFF', code: 'IRQ', flag: 'irq' },
   'Qatar':         { primary: '#8D1B3D', secondary: '#FFFFFF', code: 'QAT', flag: 'qat' },
   'Uzbekistan':    { primary: '#1EB53A', secondary: '#FFFFFF', code: 'UZB', flag: 'uzb' },
+  // ── EUROPE (World Cup 2026 teams) ────────────────────────────────
+  'Bosnia & Herzegovina': { primary: '#002395', secondary: '#FECC02', code: 'BIH', flag: 'bih' },
+  'Bosnia-Herzegovina':   { primary: '#002395', secondary: '#FECC02', code: 'BIH', flag: 'bih' },
+  'Bosnia':               { primary: '#002395', secondary: '#FECC02', code: 'BIH', flag: 'bih' },
+  'Slovakia':             { primary: '#0B4EA2', secondary: '#FFFFFF', code: 'SVK', flag: null },
+  'Romania':              { primary: '#002B7F', secondary: '#FCD116', code: 'ROU', flag: null },
+  'Greece':               { primary: '#0D5EAF', secondary: '#FFFFFF', code: 'GRE', flag: null },
+  'Sweden':               { primary: '#006AA7', secondary: '#FECC02', code: 'SWE', flag: 'swe' },
+  'Czech Republic':       { primary: '#D7141A', secondary: '#FFFFFF', code: 'CZE', flag: 'cze' },
+  // ── AFRICA (World Cup 2026 teams) ────────────────────────────────
+  'Congo DR':             { primary: '#007FFF', secondary: '#F7D618', code: 'COD', flag: 'cod' },
+  'DR Congo':             { primary: '#007FFF', secondary: '#F7D618', code: 'COD', flag: 'cod' },
+  'Burkina Faso':         { primary: '#EF2B2D', secondary: '#009A00', code: 'BFA', flag: null },
+  'Mali':                 { primary: '#009A00', secondary: '#FCD116', code: 'MLI', flag: null },
+  'Ghana':                { primary: '#006B3F', secondary: '#FCD116', code: 'GHA', flag: null },
+  // ── ASIA / OCEANIA (World Cup 2026 teams) ────────────────────────
+  'Indonesia':            { primary: '#CE1126', secondary: '#FFFFFF', code: 'IDN', flag: null },
+  'United Arab Emirates': { primary: '#00732F', secondary: '#FFFFFF', code: 'UAE', flag: null },
+  'China':                { primary: '#DE2910', secondary: '#FFDE00', code: 'CHN', flag: null },
+  'China PR':             { primary: '#DE2910', secondary: '#FFDE00', code: 'CHN', flag: null },
+  // ── SOUTH AMERICA (additional) ───────────────────────────────────
+  'Chile':                { primary: '#D52B1E', secondary: '#FFFFFF', code: 'CHI', flag: null },
+  'Paraguay':             { primary: '#D52B1E', secondary: '#FFFFFF', code: 'PAR', flag: null },
+  'Bolivia':              { primary: '#D52B1E', secondary: '#F4E400', code: 'BOL', flag: null },
+  // ── CENTRAL AMERICA ──────────────────────────────────────────────
+  'Jamaica':              { primary: '#000000', secondary: '#FED100', code: 'JAM', flag: null },
+  'Cuba':                 { primary: '#002A8F', secondary: '#CF142B', code: 'CUB', flag: null },
+  'Trinidad & Tobago':    { primary: '#CE1126', secondary: '#000000', code: 'TRI', flag: null },
 }
 
 export const defaultColors: CountryColor = { primary: '#1a4a2a', secondary: '#2a6a3a', code: '???', flag: null }

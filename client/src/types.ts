@@ -8,6 +8,7 @@ export interface Player {
   position: Position
   goals: number
   caps: number
+  txoddsId?: number
 }
 
 export type SlotId = 'gk' | 'def1' | 'def2' | 'fwd1' | 'fwd2'
