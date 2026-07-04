@@ -1,6 +1,13 @@
 import { Pool } from 'pg'
 
-const pool = new Pool({ connectionString: process.env.DATABASE_DIRECT_URL })
+let _pool: Pool | null = null
+function pool(): Pool {
+  if (!_pool) {
+    if (!process.env.DATABASE_DIRECT_URL) throw new Error('DATABASE_DIRECT_URL is not set in .env')
+    _pool = new Pool({ connectionString: process.env.DATABASE_DIRECT_URL })
+  }
+  return _pool
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -39,7 +46,7 @@ export interface Tournament {
 // ── Schema init ───────────────────────────────────────────────────────────────
 
 export async function initDb(): Promise<void> {
-  await pool.query(`
+  await pool().query(`
     CREATE TABLE IF NOT EXISTS squads (
       wallet_address TEXT PRIMARY KEY,
       squad_name     TEXT NOT NULL DEFAULT '',
@@ -63,7 +70,7 @@ export async function initDb(): Promise<void> {
   `)
 
   // Seed default tournaments (ignore conflicts so re-starts are safe)
-  await pool.query(`
+  await pool().query(`
     INSERT INTO tournaments (id, name, description, prize, status, start_date, end_date, max_participants)
     VALUES
       ('vsquad-global-2026',  'VSquad Global League',
@@ -116,7 +123,7 @@ function rowToTournament(row: Record<string, unknown>): Tournament {
 // ── Squad helpers ─────────────────────────────────────────────────────────────
 
 export async function getSquad(walletAddress: string): Promise<SquadRecord | undefined> {
-  const { rows } = await pool.query(
+  const { rows } = await pool().query(
     'SELECT * FROM squads WHERE wallet_address = $1',
     [walletAddress]
   )
@@ -124,14 +131,14 @@ export async function getSquad(walletAddress: string): Promise<SquadRecord | und
 }
 
 export async function getAllSquads(): Promise<SquadRecord[]> {
-  const { rows } = await pool.query('SELECT * FROM squads ORDER BY updated_at DESC')
+  const { rows } = await pool().query('SELECT * FROM squads ORDER BY updated_at DESC')
   return rows.map(rowToSquad)
 }
 
 export async function upsertSquad(
   record: Omit<SquadRecord, 'createdAt' | 'updatedAt'>
 ): Promise<SquadRecord> {
-  const { rows } = await pool.query(
+  const { rows } = await pool().query(
     `INSERT INTO squads (wallet_address, squad_name, squad, locked)
      VALUES ($1, $2, $3, $4)
      ON CONFLICT (wallet_address) DO UPDATE SET
@@ -146,7 +153,7 @@ export async function upsertSquad(
 }
 
 export async function lockSquad(walletAddress: string): Promise<boolean> {
-  const { rowCount } = await pool.query(
+  const { rowCount } = await pool().query(
     `UPDATE squads SET locked = TRUE, updated_at = NOW()
      WHERE wallet_address = $1 AND locked = FALSE`,
     [walletAddress]
@@ -155,7 +162,7 @@ export async function lockSquad(walletAddress: string): Promise<boolean> {
 }
 
 export async function deleteSquad(walletAddress: string): Promise<boolean> {
-  const { rowCount } = await pool.query(
+  const { rowCount } = await pool().query(
     'DELETE FROM squads WHERE wallet_address = $1',
     [walletAddress]
   )
@@ -165,18 +172,18 @@ export async function deleteSquad(walletAddress: string): Promise<boolean> {
 // ── Tournament helpers ────────────────────────────────────────────────────────
 
 export async function listTournaments(): Promise<Tournament[]> {
-  const { rows } = await pool.query('SELECT * FROM tournaments ORDER BY start_date ASC')
+  const { rows } = await pool().query('SELECT * FROM tournaments ORDER BY start_date ASC')
   return rows.map(rowToTournament)
 }
 
 export async function getTournament(id: string): Promise<Tournament | undefined> {
-  const { rows } = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id])
+  const { rows } = await pool().query('SELECT * FROM tournaments WHERE id = $1', [id])
   return rows[0] ? rowToTournament(rows[0]) : undefined
 }
 
 export async function joinTournament(id: string, walletAddress: string): Promise<Tournament | null> {
   // Check exists, not full, and not already joined — then append atomically
-  const { rows } = await pool.query(
+  const { rows } = await pool().query(
     `UPDATE tournaments
      SET participants = array_append(participants, $2)
      WHERE id = $1
@@ -194,7 +201,7 @@ export async function joinTournament(id: string, walletAddress: string): Promise
 }
 
 export async function leaveTournament(id: string, walletAddress: string): Promise<boolean> {
-  const { rowCount } = await pool.query(
+  const { rowCount } = await pool().query(
     `UPDATE tournaments
      SET participants = array_remove(participants, $2)
      WHERE id = $1 AND $2 = ANY(participants)`,
@@ -207,7 +214,7 @@ export async function createTournament(
   data: Omit<Tournament, 'id' | 'participants'>
 ): Promise<Tournament> {
   const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-  const { rows } = await pool.query(
+  const { rows } = await pool().query(
     `INSERT INTO tournaments (id, name, description, prize, status, start_date, end_date, max_participants)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,

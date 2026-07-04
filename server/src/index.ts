@@ -1,14 +1,14 @@
+import dotenv from 'dotenv'
+dotenv.config()
+
 import express from 'express'
 import cors from 'cors'
-import dotenv from 'dotenv'
 import squadRoutes from './routes/squad'
 import tournamentRoutes from './routes/tournament'
 import scoresRoutes from './routes/scores'
 import { authenticate, probeToken, startScoreStream } from './services/txodds/index'
 import { startLiveScoring } from './services/liveScoring'
 import { initDb } from './db'
-
-dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 3001
