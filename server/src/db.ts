@@ -13,6 +13,7 @@ export interface Player {
   position: 'GK' | 'DEF' | 'FWD'
   goals: number
   caps: number
+  txoddsId?: number
 }
 
 export interface SquadRecord {
@@ -121,6 +122,10 @@ function save(data: DB): void {
 
 export function getSquad(walletAddress: string): SquadRecord | undefined {
   return load().squads[walletAddress]
+}
+
+export function getAllSquads(): SquadRecord[] {
+  return Object.values(load().squads)
 }
 
 export function upsertSquad(record: Omit<SquadRecord, 'createdAt' | 'updatedAt'>): SquadRecord {
