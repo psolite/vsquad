@@ -6,6 +6,7 @@ import tournamentRoutes from './routes/tournament'
 import scoresRoutes from './routes/scores'
 import { authenticate, probeToken, startScoreStream } from './services/txodds/index'
 import { startLiveScoring } from './services/liveScoring'
+import { initDb } from './db'
 
 dotenv.config()
 
@@ -24,8 +25,9 @@ app.use('/api/tournaments', tournamentRoutes)
 app.use('/api/scores', scoresRoutes)
 
 app.listen(PORT, async () => {
+  await initDb()
   console.log(`Server running on http://localhost:${PORT}`)
-  console.log(`Data stored in: db.json`)
+  console.log(`Database: PostgreSQL (Supabase)`)
 
   const existingToken = process.env.TXODDS_API_TOKEN
 
