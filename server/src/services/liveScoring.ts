@@ -81,8 +81,8 @@ export function getMatchScores(): MatchLiveScore[] {
 
 export const liveScoringEmitter = new EventEmitter()
 
-function broadcast() {
-  liveScoringEmitter.emit('leaderboard', buildLeaderboard())
+async function broadcast() {
+  liveScoringEmitter.emit('leaderboard', await buildLeaderboard())
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -115,14 +115,14 @@ function applyEvent(wallet: string, player: Player, event: EventType) {
 
 // ── Event listener that maps TxOdds stream events → fantasy points ─────────────
 
-function handleScoringEvent(
+async function handleScoringEvent(
   playerName: string,
   teamName:   string,
   event:      EventType,
   label:      string,
   playerId?:  number | null,
 ) {
-  const squads  = getAllSquads()
+  const squads  = await getAllSquads()
   let   matched = false
 
   for (const squad of squads) {
@@ -163,8 +163,8 @@ export function startLiveScoring() {
 
 // ── Leaderboard builder ───────────────────────────────────────────────────────
 
-export function buildLeaderboard(): SquadLiveScore[] {
-  const squads = getAllSquads()
+export async function buildLeaderboard(): Promise<SquadLiveScore[]> {
+  const squads = await getAllSquads()
 
   const rows: SquadLiveScore[] = squads.map(squad => {
     const playerEntries = Object.values(state[squad.walletAddress] ?? {})

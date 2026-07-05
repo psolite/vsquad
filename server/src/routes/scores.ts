@@ -8,14 +8,14 @@ import {
 const router = Router()
 
 // ── GET /api/scores/live  (SSE) ───────────────────────────────────────────────
-router.get('/live', (req: Request, res: Response) => {
+router.get('/live', async (req: Request, res: Response) => {
   res.setHeader('Content-Type',      'text/event-stream')
   res.setHeader('Cache-Control',     'no-cache')
   res.setHeader('Connection',        'keep-alive')
   res.setHeader('X-Accel-Buffering', 'no')
   res.flushHeaders()
 
-  res.write(`event: leaderboard\ndata: ${JSON.stringify(buildLeaderboard())}\n\n`)
+  res.write(`event: leaderboard\ndata: ${JSON.stringify(await buildLeaderboard())}\n\n`)
 
   const onGoal = (event: GoalEvent) => {
     res.write(`event: goal\ndata: ${JSON.stringify(event)}\n\n`)
@@ -42,8 +42,8 @@ router.get('/live', (req: Request, res: Response) => {
 })
 
 // ── GET /api/scores/leaderboard ───────────────────────────────────────────────
-router.get('/leaderboard', (_req: Request, res: Response) => {
-  res.json(buildLeaderboard())
+router.get('/leaderboard', async (_req: Request, res: Response) => {
+  res.json(await buildLeaderboard())
 })
 
 // ── GET /api/scores/points ────────────────────────────────────────────────────

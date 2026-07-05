@@ -188,7 +188,7 @@ export async function joinTournament(id: string, walletAddress: string): Promise
      SET participants = array_append(participants, $2)
      WHERE id = $1
        AND NOT ($2 = ANY(participants))
-       AND array_length(participants, 1) < max_participants
+       AND COALESCE(array_length(participants, 1), 0) < max_participants
      RETURNING *`,
     [id, walletAddress]
   )
