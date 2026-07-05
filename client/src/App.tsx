@@ -4,6 +4,7 @@ import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom'
 import { clusterApiUrl } from '@solana/web3.js'
+import { Toaster } from 'react-hot-toast'
 import '@solana/wallet-adapter-react-ui/styles.css'
 
 import Sidebar from './components/Sidebar'
@@ -49,6 +50,14 @@ export default function App() {
         <WalletModalProvider>
           <BrowserRouter>
             <InnerApp />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: { background: '#0f1923', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', fontSize: '13px' },
+                success: { iconTheme: { primary: '#00FF87', secondary: '#0a0e1a' } },
+                error:   { iconTheme: { primary: '#f87171', secondary: '#0a0e1a' } },
+              }}
+            />
           </BrowserRouter>
         </WalletModalProvider>
       </WalletProvider>
