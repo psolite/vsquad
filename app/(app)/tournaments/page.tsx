@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import toast from 'react-hot-toast'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useSquadStore, isComplete } from '@/store/squadStore'
 import { tournamentApi } from '@/lib/api/tournamentApi'
@@ -401,6 +402,7 @@ export default function TournamentPage() {
       setTournaments((prev) => [created, ...prev])
       setShowCreate(false)
       setForm(EMPTY_FORM)
+      toast.success('Tournament created!')
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Failed to create')
     } finally {
@@ -414,8 +416,9 @@ export default function TournamentPage() {
     try {
       const updated = await tournamentApi.join(id, wallet)
       setTournaments((prev) => prev.map((t) => (t.id === id ? updated : t)))
+      toast.success('Joined tournament!')
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to join')
+      toast.error(err instanceof Error ? err.message : 'Failed to join')
     } finally { setBusy(null) }
   }
 
@@ -427,8 +430,9 @@ export default function TournamentPage() {
       setTournaments((prev) =>
         prev.map((t) => t.id === id ? { ...t, participants: t.participants.filter((w) => w !== wallet) } : t)
       )
+      toast.success('Left tournament')
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to leave')
+      toast.error(err instanceof Error ? err.message : 'Failed to leave')
     } finally { setBusy(null) }
   }
 

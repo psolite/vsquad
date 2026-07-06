@@ -92,8 +92,8 @@ export function getMatchScores(): MatchLiveScore[] {
 
 export const liveScoringEmitter = new EventEmitter()
 
-function broadcast() {
-  liveScoringEmitter.emit('leaderboard', buildLeaderboard())
+async function broadcast() {
+  liveScoringEmitter.emit('leaderboard', await buildLeaderboard())
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useSquadStore, isComplete } from '@/store/squadStore'
@@ -46,6 +47,7 @@ export default function MySquadPage() {
     try {
       await squadApi.save(wallet, squadName, squad, true)
       setSaved(true)
+      toast.success('Squad locked in!')
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Save failed')
     } finally {
@@ -64,6 +66,7 @@ export default function MySquadPage() {
       try { await squadApi.delete(wallet) } catch { /* not yet saved — fine */ }
     }
     resetSquad()
+    toast('Squad cleared', { icon: '🗑️' })
     router.push('/squad')
   }
 
