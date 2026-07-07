@@ -29,13 +29,17 @@ export default function LandingPage() {
   return (
     <div
       className="relative flex flex-col items-center justify-center flex-1 overflow-hidden"
-      style={{
-        minHeight: "100vh",
-        backgroundImage: "url(/BackgroundImage.png)",
-        backgroundSize: "cover",
-        backgroundPosition: "center bottom",
-      }}
+      style={{ minHeight: "100vh" }}
     >
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "url(/BackgroundImage.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "center bottom",
+        }}
+      />
+
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
