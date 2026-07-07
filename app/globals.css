@@ -28,6 +28,23 @@ html, body { height: 100%; }
 .wallet-adapter-button-start-icon { display: none !important; }
 .wallet-adapter-dropdown { z-index: 1000 !important; }
 .wallet-adapter-dropdown-list { z-index: 1000 !important; }
+
+/* Sidebar's wallet button sits at the bottom of the viewport, inside a
+   container with overflow:hidden — position:absolute keeps the dropdown
+   trapped inside that clipping box no matter what. position:fixed escapes
+   it entirely and renders as a true overlay above everything. */
+.sidebar-wallet-dropdown .wallet-adapter-dropdown { display: block !important; width: 100%; }
+.sidebar-wallet-dropdown .wallet-adapter-dropdown-list {
+  position: fixed !important;
+  z-index: 1000 !important;
+  left: 14px !important;
+  width: 192px !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 74px !important;
+  margin: 0 !important;
+}
+.sidebar-wallet-dropdown .wallet-adapter-dropdown-list-active { transform: none !important; }
 .wallet-adapter-modal { background: rgba(0,0,0,0.75) !important; backdrop-filter: blur(8px) !important; }
 .wallet-adapter-modal-wrapper { background: #0f1923 !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 20px !important; padding: 32px !important; box-shadow: 0 24px 64px rgba(0,0,0,0.6) !important; max-width: 380px !important; }
 .wallet-adapter-modal-title { color: #ffffff !important; font-size: 18px !important; font-weight: 800 !important; text-align: center !important; margin-bottom: 24px !important; }

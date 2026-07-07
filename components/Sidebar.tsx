@@ -175,7 +175,11 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF87', boxShadow: '0 0 5px #00FF87', flexShrink: 0 }} />
           </div>
         )}
-        {mounted && <WalletMultiButton style={{ width: '100%', justifyContent: 'center', fontSize: '12px' }} />}
+        {mounted && (
+          <div className="sidebar-wallet-dropdown">
+            <WalletMultiButton style={{ width: '100%', justifyContent: 'center', fontSize: '12px' }} />
+          </div>
+        )}
       </div>
     </aside>
   )
