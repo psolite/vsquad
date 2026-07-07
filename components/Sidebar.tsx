@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
@@ -22,6 +22,10 @@ const NAV_ITEMS = [
 ]
 
 function shortKey(key: string) { return `${key.slice(0, 4)}…${key.slice(-4)}` }
+
+const noopSubscribe = () => () => {}
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
 
 // ── Live Scores Widget ────────────────────────────────────────────────────────
 
@@ -101,8 +105,7 @@ interface SidebarProps {
 export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
   const pathname = usePathname()
   const { publicKey, connected } = useWallet()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  const mounted = useSyncExternalStore(noopSubscribe, getClientSnapshot, getServerSnapshot)
 
   return (
     <aside className={`app-sidebar ${mobileOpen ? 'app-sidebar--open' : ''}`} style={{ width: '220px', flexShrink: 0, height: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, #080c18 0%, #070a14 100%)', borderRight: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 10 }}>

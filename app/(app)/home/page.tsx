@@ -27,10 +27,10 @@ export default function DashboardHomePage() {
   const [matches,      setMatches]      = useState<MatchesResponse | null>(null)
   const [myLeaderboard, setMyLeaderboard] = useState<SquadLiveScore | null>(null)
   const [liveMap,      setLiveMap]      = useState<Record<string, MatchLiveScore>>({})
-  const [loading,      setLoading]      = useState(true)
+  const [loading,      setLoading]      = useState(() => !!publicKey)
 
   useEffect(() => {
-    if (!publicKey) { setLoading(false); return }
+    if (!publicKey) return
     const wallet = publicKey.toBase58()
     let cancelled = false
 

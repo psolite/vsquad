@@ -1,12 +1,16 @@
 import { Pool } from 'pg'
 
-let _pool: Pool | null = null
+// In dev, Next.js/Turbopack hot-reloads this module on every file change, which
+// would otherwise spawn a fresh Pool (and orphan the old one's connections) each
+// time. Stashing it on globalThis lets hot-reloads reuse the same live pool.
+const globalForDb = globalThis as unknown as { _pgPool?: Pool }
+
 function pool(): Pool {
-  if (!_pool) {
+  if (!globalForDb._pgPool) {
     if (!process.env.DATABASE_DIRECT_URL) throw new Error('DATABASE_DIRECT_URL is not set')
-    _pool = new Pool({ connectionString: process.env.DATABASE_DIRECT_URL })
+    globalForDb._pgPool = new Pool({ connectionString: process.env.DATABASE_DIRECT_URL })
   }
-  return _pool
+  return globalForDb._pgPool
 }
 
 export interface Player {
