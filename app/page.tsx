@@ -11,9 +11,6 @@ export default function LandingPage() {
   const router = useRouter()
   const { loadSquad } = useSquadStore()
   const [checking, setChecking] = useState(false)
-  const [mounted,  setMounted]  = useState(false)
-
-  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     if (!connected || !publicKey) return
@@ -68,7 +65,7 @@ export default function LandingPage() {
 
         <div className="relative" style={{ padding: '0.5rem' }}>
           <div className="absolute inset-0 rounded-xl blur-xl opacity-35" style={{ background: '#00FF87', transform: 'scale(1.15)' }} />
-          {mounted && <WalletMultiButton />}
+          <WalletMultiButton />
           {checking && <p style={{ color: 'rgba(0,255,135,0.6)', fontSize: '11px', fontWeight: 700, textAlign: 'center', marginTop: '10px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Loading your squad…</p>}
         </div>
 

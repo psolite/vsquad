@@ -1,8 +1,11 @@
 'use client'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { scoresApi } from '@/lib/api/scoresApi'
+import type { MatchLiveScore, MatchesResponse, Fixture } from '@/lib/api/scoresApi'
 
 function HomeIcon()     { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> }
 function PitchIcon()    { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><circle cx="12" cy="12" r="3.5"/><line x1="2" y1="12" x2="5.5" y2="12"/><line x1="18.5" y1="12" x2="22" y2="12"/></svg> }
@@ -20,9 +23,81 @@ const NAV_ITEMS = [
 
 function shortKey(key: string) { return `${key.slice(0, 4)}…${key.slice(-4)}` }
 
+// ── Live Scores Widget ────────────────────────────────────────────────────────
+
+function LiveScoresWidget() {
+  const [fixtures, setFixtures] = useState<Fixture[]>([])
+  const [liveMap,  setLiveMap]  = useState<Record<string, MatchLiveScore>>({})
+
+  useEffect(() => {
+    scoresApi.matches().then((d: MatchesResponse) => {
+      setFixtures([...(d.live ?? []), ...(d.today ?? [])])
+    }).catch(() => {})
+
+    return scoresApi.subscribeToLive({
+      onMatchScores: (scores) => {
+        setLiveMap((prev) => {
+          const next = { ...prev }
+          for (const s of scores) next[s.fixtureId] = s
+          return next
+        })
+      },
+      onMatchScore: (s) => setLiveMap((prev) => ({ ...prev, [s.fixtureId]: s })),
+    })
+  }, [])
+
+  const liveFixtures = fixtures.filter(f => liveMap[f.fixtureId]?.matchStatus === 'live' || f.status === 'live')
+  if (liveFixtures.length === 0) return null
+
+  return (
+    <div style={{ padding: '0 12px 10px', flexShrink: 0 }}>
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', paddingLeft: '4px' }}>
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF87', boxShadow: '0 0 6px #00FF87', flexShrink: 0 }} />
+          <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em' }}>Live Now</span>
+          <span style={{ marginLeft: 'auto', background: 'rgba(0,255,135,0.12)', color: '#00FF87', fontSize: '9px', fontWeight: 900, padding: '1px 6px', borderRadius: '6px' }}>{liveFixtures.length}</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          {liveFixtures.slice(0, 3).map((f) => {
+            const s = liveMap[f.fixtureId]
+            const h = s?.homeScore ?? f.homeScore
+            const a = s?.awayScore ?? f.awayScore
+            const min = s?.minute ?? f.minute
+            return (
+              <div key={f.fixtureId} style={{ background: 'rgba(0,255,135,0.05)', border: '1px solid rgba(0,255,135,0.12)', borderRadius: '9px', padding: '7px 10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {f.homeTeam.slice(0, 3).toUpperCase()}
+                  </span>
+                  <span style={{ color: '#00FF87', fontSize: '13px', fontWeight: 900, letterSpacing: '-0.02em', flexShrink: 0 }}>
+                    {h !== null && a !== null ? `${h}–${a}` : '–'}
+                  </span>
+                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                    {f.awayTeam.slice(0, 3).toUpperCase()}
+                  </span>
+                </div>
+                {min != null && (
+                  <div style={{ textAlign: 'center', marginTop: '2px' }}>
+                    <span style={{ color: 'rgba(0,255,135,0.5)', fontSize: '9px', fontWeight: 700 }}>{min}&apos;</span>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+          {liveFixtures.length > 3 && (
+            <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: '9px', textAlign: 'center', margin: 0 }}>+{liveFixtures.length - 3} more</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Sidebar() {
   const pathname = usePathname()
   const { publicKey, connected } = useWallet()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   return (
     <aside style={{ width: '220px', flexShrink: 0, height: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, #080c18 0%, #070a14 100%)', borderRight: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 10 }}>
@@ -75,9 +150,12 @@ export default function Sidebar() {
         </div>
       </div>
 
+      {/* Live Scores */}
+      <LiveScoresWidget />
+
       {/* Wallet */}
       <div style={{ padding: '14px 14px 18px', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
-        {connected && publicKey && (
+        {mounted && connected && publicKey && (
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '10px 12px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0, background: 'rgba(0,255,135,0.15)', border: '1px solid rgba(0,255,135,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF87" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -89,7 +167,7 @@ export default function Sidebar() {
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF87', boxShadow: '0 0 5px #00FF87', flexShrink: 0 }} />
           </div>
         )}
-        <WalletMultiButton style={{ width: '100%', justifyContent: 'center', fontSize: '12px' }} />
+        {mounted && <WalletMultiButton style={{ width: '100%', justifyContent: 'center', fontSize: '12px' }} />}
       </div>
     </aside>
   )

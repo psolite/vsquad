@@ -63,6 +63,14 @@ export async function initDb(): Promise<void> {
       max_participants INTEGER NOT NULL DEFAULT 1000,
       participants     TEXT[] NOT NULL DEFAULT '{}'
     );
+
+    CREATE TABLE IF NOT EXISTS daily_points (
+      wallet_address TEXT NOT NULL,
+      date           DATE NOT NULL,
+      player_points  JSONB NOT NULL DEFAULT '{}',
+      total_points   INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (wallet_address, date)
+    );
   `)
 
   await pool().query(`
@@ -196,4 +204,66 @@ export async function createTournament(data: Omit<Tournament, 'id' | 'participan
     [id, data.name, data.description, data.prize, data.status, data.startDate, data.endDate, data.maxParticipants]
   )
   return rowToTournament(rows[0])
+}
+
+// ── Daily points ──────────────────────────────────────────────────────────────
+
+export interface DailyPointsRow {
+  walletAddress: string
+  date:          string              // YYYY-MM-DD
+  playerPoints:  Record<string, number>  // { [playerId]: points }
+  totalPoints:   number
+}
+
+export async function upsertDailyPoints(
+  walletAddress: string,
+  date: string,
+  playerPoints: Record<string, number>,
+): Promise<void> {
+  const total = Object.values(playerPoints).reduce((s, n) => s + n, 0)
+  await pool().query(
+    `INSERT INTO daily_points (wallet_address, date, player_points, total_points)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (wallet_address, date) DO UPDATE
+       SET player_points = EXCLUDED.player_points,
+           total_points  = EXCLUDED.total_points`,
+    [walletAddress, date, JSON.stringify(playerPoints), total]
+  )
+}
+
+export async function getDailyPoints(walletAddress: string, date: string): Promise<DailyPointsRow | null> {
+  const { rows } = await pool().query(
+    'SELECT * FROM daily_points WHERE wallet_address = $1 AND date = $2',
+    [walletAddress, date]
+  )
+  if (!rows[0]) return null
+  return {
+    walletAddress: rows[0].wallet_address,
+    date:          rows[0].date instanceof Date ? rows[0].date.toISOString().slice(0, 10) : String(rows[0].date).slice(0, 10),
+    playerPoints:  rows[0].player_points as Record<string, number>,
+    totalPoints:   rows[0].total_points as number,
+  }
+}
+
+export async function getWalletTotalPoints(walletAddress: string): Promise<{ playerPoints: Record<string, number>; total: number }> {
+  const { rows } = await pool().query(
+    'SELECT player_points, total_points FROM daily_points WHERE wallet_address = $1',
+    [walletAddress]
+  )
+  const merged: Record<string, number> = {}
+  let total = 0
+  for (const row of rows) {
+    total += row.total_points as number
+    for (const [pid, pts] of Object.entries(row.player_points as Record<string, number>)) {
+      merged[pid] = (merged[pid] ?? 0) + pts
+    }
+  }
+  return { playerPoints: merged, total }
+}
+
+export async function getAllWalletTotals(): Promise<Array<{ walletAddress: string; total: number }>> {
+  const { rows } = await pool().query(
+    'SELECT wallet_address, SUM(total_points)::int AS total FROM daily_points GROUP BY wallet_address'
+  )
+  return rows.map(r => ({ walletAddress: r.wallet_address as string, total: r.total as number }))
 }

@@ -27,6 +27,15 @@ export interface CardEvent {
   raw:        unknown
 }
 
+export interface LineupsEvent {
+  fixtureId: string
+  players: Array<{
+    normativeId: number
+    name:        string  // "LastName, FirstName" from TXOdds
+    team:        string
+  }>
+}
+
 export interface FixtureEvent {
   fixtureId:        string
   homeTeam:         string
@@ -156,6 +165,18 @@ export async function startScoreStream(apiToken: string) {
                 minute, raw: parsed,
               }
               scoreEmitter.emit('card', event)
+            } else if (action === 'lineups') {
+              const rawLineups: any[] = update.Lineups ?? []
+              const players: LineupsEvent['players'] = []
+              for (const teamLineup of rawLineups) {
+                const team = String(teamLineup.preferredName ?? '')
+                for (const pl of (teamLineup.lineups ?? [])) {
+                  const nId = pl.player?.normativeId
+                  const pName = String(pl.player?.preferredName ?? '')
+                  if (nId != null && pName) players.push({ normativeId: Number(nId), name: pName, team })
+                }
+              }
+              if (players.length > 0) scoreEmitter.emit('lineups', { fixtureId, players } as LineupsEvent)
             } else {
               scoreEmitter.emit('update', { action, fixtureId, score, minute, raw: parsed })
             }
@@ -218,11 +239,33 @@ export interface MatchScoreResult {
   awayRed:     number
 }
 
+// Parse raw SSE text (historical endpoint returns text/event-stream)
+function parseSseEvents(text: string): any[] {
+  const events: any[] = []
+  const blocks = String(text).split(/\r?\n\r?\n/)
+  for (const block of blocks) {
+    for (const line of block.split(/\r?\n/)) {
+      if (line.startsWith('data:')) {
+        try { events.push(JSON.parse(line.slice(5).trim())) } catch {}
+      }
+    }
+  }
+  return events
+}
+
+// Map historical GameState string → our status
+function gameStateToStatus(gs: string): 'live' | 'finished' | 'upcoming' {
+  const s = gs.toLowerCase()
+  if (s.includes('finish') || s === 'after_penalties' || s === 'after_extra_time') return 'finished'
+  if (s === 'scheduled' || s === 'not_started') return 'upcoming'
+  return 'live'
+}
+
 export async function fetchMatchScore(
   apiToken: string,
   fixtureId: string,
   isLive = false,
-  participant1IsHome = true,   // from fixture snapshot — don't trust score snapshot's copy
+  participant1IsHome = true,
 ): Promise<MatchScoreResult | null> {
   const cached = _scoreCache.get(fixtureId)
   const ttl    = isLive ? SCORE_CACHE_TTL : 30 * 60_000
@@ -231,58 +274,106 @@ export async function fetchMatchScore(
   const { apiBase } = cfg()
   try {
     const jwt = await getSessionJwt()
+
+    // ── Historical (finished matches) ───────────────────────────────────────
+    if (!isLive) {
+      const { data } = await axios.get(`${apiBase}/scores/historical/${fixtureId}`, {
+        headers:      authHeaders(apiToken, jwt),
+        responseType: 'text',
+      })
+
+      const events = parseSseEvents(data as string)
+      if (events.length === 0) return null
+
+      // Walk all events: track running score, last game state, last clock minute
+      let p1Goals = 0, p2Goals = 0
+      let p1Yellow = 0, p2Yellow = 0
+      let p1Red = 0, p2Red = 0
+      let gameState = 'scheduled'
+      let minute: number | null = null
+
+      for (const ev of events) {
+        if (ev.GameState) gameState = ev.GameState
+        if (ev.Score) {
+          const p1 = ev.Score.Participant1
+          const p2 = ev.Score.Participant2
+          // flat number (live stream) or nested object { Total: { Goals: N } }
+          p1Goals = typeof p1 === 'number' ? p1 : Number((p1?.Total ?? p1)?.Goals ?? p1Goals)
+          p2Goals = typeof p2 === 'number' ? p2 : Number((p2?.Total ?? p2)?.Goals ?? p2Goals)
+        }
+        // Cards tracked in Stats
+        if (ev.Stats) {
+          p1Yellow = Number(ev.Stats.YellowCards?.Participant1 ?? ev.Stats.yellowCards?.Participant1 ?? p1Yellow)
+          p2Yellow = Number(ev.Stats.YellowCards?.Participant2 ?? ev.Stats.yellowCards?.Participant2 ?? p2Yellow)
+          p1Red    = Number(ev.Stats.RedCards?.Participant1    ?? ev.Stats.redCards?.Participant1    ?? p1Red)
+          p2Red    = Number(ev.Stats.RedCards?.Participant2    ?? ev.Stats.redCards?.Participant2    ?? p2Red)
+        }
+        if (ev.Clock?.Seconds != null) minute = Math.floor(ev.Clock.Seconds / 60)
+      }
+
+      const matchStatus = gameStateToStatus(gameState)
+      const homeScore   = participant1IsHome ? p1Goals : p2Goals
+      const awayScore   = participant1IsHome ? p2Goals : p1Goals
+      const homeYellow  = participant1IsHome ? p1Yellow : p2Yellow
+      const awayYellow  = participant1IsHome ? p2Yellow : p1Yellow
+      const homeRed     = participant1IsHome ? p1Red    : p2Red
+      const awayRed     = participant1IsHome ? p2Red    : p1Red
+
+      const firstScore = events.find((e) => e.Score)
+      if (firstScore) console.log(`[txodds] historical Score sample:`, JSON.stringify(firstScore.Score))
+      console.log(`[txodds] historical ${fixtureId}: ${homeScore}-${awayScore} gameState=${gameState} events=${events.length}`)
+
+      const result = { homeScore, awayScore, minute, statusCode: 'F', matchStatus, homeYellow, awayYellow, homeRed, awayRed, fetchedAt: Date.now() }
+      _scoreCache.set(fixtureId, result as any)
+      return result
+    }
+
+    // ── Snapshot (live matches) ─────────────────────────────────────────────
     const { data } = await axios.get(`${apiBase}/scores/snapshot/${fixtureId}`, {
       headers: authHeaders(apiToken, jwt),
     })
-    const snapshots: any[] = Array.isArray(data) ? data : []
+    const snapshots: any[] = Array.isArray(data) ? data : data ? [data] : []
     if (snapshots.length === 0) return null
 
     const last       = snapshots[snapshots.length - 1]
-    const scoreObj   = last.Score ?? last.scoreSoccer ?? null   // actual field is 'Score'
+    const scoreObj   = last.Score ?? last.scoreSoccer ?? null
     const statusCode = String(last.StatusId ?? last.statusSoccerId ?? last.GameState ?? 'NS')
 
-    // Minute from Data or Clock
-    const dataObj = last.Data ?? last.dataSoccer ?? {}
+    const dataObj = last.Data ?? {}
     const clock   = last.Clock ?? {}
     const minute: number | null =
       dataObj.Minute ?? dataObj.minute ??
       clock.Minutes  ?? clock.minutes  ?? null
 
     if (!scoreObj) {
-      // Log once to help diagnose if Score is still undefined
-      console.log('[txodds] no Score field in snapshot, StatusId:', last.StatusId, 'GameState:', last.GameState)
+      console.log('[txodds] no Score in snapshot, StatusId:', last.StatusId)
       return null
     }
 
-    // Use the value from the fixture snapshot — score snapshot's copy may differ
-    const p1IsHome  = participant1IsHome
-    const scoreP1   = scoreObj.Participant1 ?? scoreObj.participant1 ?? {}
-    const scoreP2   = scoreObj.Participant2 ?? scoreObj.participant2 ?? {}
-    const totHome   = (p1IsHome ? scoreP1 : scoreP2).Total ?? (p1IsHome ? scoreP1 : scoreP2)
-    const totAway   = (p1IsHome ? scoreP2 : scoreP1).Total ?? (p1IsHome ? scoreP2 : scoreP1)
+    const scoreP1 = scoreObj.Participant1 ?? {}
+    const scoreP2 = scoreObj.Participant2 ?? {}
+    const totHome = (participant1IsHome ? scoreP1 : scoreP2).Total ?? (participant1IsHome ? scoreP1 : scoreP2)
+    const totAway = (participant1IsHome ? scoreP2 : scoreP1).Total ?? (participant1IsHome ? scoreP2 : scoreP1)
 
-    // If the match started more than 110 min ago it is finished regardless of what
-    // StatusId says — the snapshot StatusId reflects the phase of the LAST ACTION
-    // (e.g. a goal in H2 leaves StatusId=H2/4), not the current match state.
-    const startTimeMs   = last.StartTime ?? 0
-    const elapsed       = Date.now() - startTimeMs
-    const matchStatus   = elapsed > 110 * 60_000 ? 'finished' : resolveMatchStatus(statusCode)
-    const finalStatus   = matchStatus === 'finished' ? 'F' : statusCode
+    const startTimeMs = last.StartTime ?? 0
+    const elapsed     = Date.now() - startTimeMs
+    const matchStatus = elapsed > 110 * 60_000 ? 'finished' : resolveMatchStatus(statusCode)
+    const finalStatus = matchStatus === 'finished' ? 'F' : statusCode
 
-    const homeScore  = Number(totHome.Goals       ?? totHome.goals       ?? 0)
-    const awayScore  = Number(totAway.Goals       ?? totAway.goals       ?? 0)
-    const homeYellow = Number(totHome.YellowCards ?? totHome.yellowCards ?? 0)
-    const awayYellow = Number(totAway.YellowCards ?? totAway.yellowCards ?? 0)
-    const homeRed    = Number(totHome.RedCards    ?? totHome.redCards    ?? 0)
-    const awayRed    = Number(totAway.RedCards    ?? totAway.redCards    ?? 0)
+    const homeScore  = Number(totHome.Goals       ?? 0)
+    const awayScore  = Number(totAway.Goals       ?? 0)
+    const homeYellow = Number(totHome.YellowCards ?? 0)
+    const awayYellow = Number(totAway.YellowCards ?? 0)
+    const homeRed    = Number(totHome.RedCards    ?? 0)
+    const awayRed    = Number(totAway.RedCards    ?? 0)
 
-    console.log(`[txodds] score parsed: ${homeScore}-${awayScore} status=${matchStatus} statusCode=${finalStatus}`)
+    console.log(`[txodds] snapshot ${fixtureId}: ${homeScore}-${awayScore} status=${matchStatus}`)
 
     const result = { homeScore, awayScore, minute, statusCode: finalStatus, matchStatus, homeYellow, awayYellow, homeRed, awayRed, fetchedAt: Date.now() }
     _scoreCache.set(fixtureId, result as any)
     return result
   } catch (err: any) {
-    console.error(`[txodds] score snapshot ${fixtureId}:`, err.message)
+    console.error(`[txodds] fetchMatchScore ${fixtureId}:`, err.message)
     return null
   }
 }
