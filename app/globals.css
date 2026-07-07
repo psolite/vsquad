@@ -104,6 +104,14 @@ body {
 /* Inner scrollable list inside a split-list-col that also has a fixed header above it */
 .builder-list-scroll { flex: 1; overflow-y: auto; min-height: 0; }
 
+/* Search box / position filters / column titles: scrolls into view, then sticks in place */
+.builder-list-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #0a0e1a;
+}
+
 @media (max-width: 860px) {
   .split-view { flex-direction: column; overflow-y: auto; }
   .split-pitch-col { width: 100%; height: 380px; flex: none; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.07); }

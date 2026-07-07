@@ -122,7 +122,7 @@ export default function SquadBuilderPage() {
 
         <div className="split-list-col">
 
-          <div style={{ padding: '14px 20px 0', flexShrink: 0 }}>
+          <div className="builder-list-header" style={{ padding: '14px 20px 0', flexShrink: 0 }}>
 
             <div style={{ position: 'relative', marginBottom: '10px' }}>
               <svg
