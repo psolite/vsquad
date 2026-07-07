@@ -48,6 +48,14 @@ export interface GoalEvent {
   score:      string
 }
 
+export interface MatchLiveScore {
+  fixtureId:   string
+  homeScore:   number
+  awayScore:   number
+  minute:      number
+  matchStatus: 'live' | 'finished'
+}
+
 export const scoresApi = {
   leaderboard: async (): Promise<SquadLiveScore[]> => {
     const res = await fetch('/api/scores/leaderboard')
@@ -61,8 +69,8 @@ export const scoresApi = {
     return res.json()
   },
 
-  points: async (): Promise<Record<string, number>> => {
-    const res = await fetch('/api/scores/points')
+  points: async (wallet: string, mode: 'today' | 'total' = 'today'): Promise<Record<string, number>> => {
+    const res = await fetch(`/api/scores/points?wallet=${encodeURIComponent(wallet)}&mode=${mode}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     return res.json()
   },
@@ -70,13 +78,18 @@ export const scoresApi = {
   subscribeToLive(handlers: {
     onGoal?:        (e: GoalEvent) => void
     onLeaderboard?: (rows: SquadLiveScore[]) => void
+    onMatchScore?:  (s: MatchLiveScore) => void
+    onMatchScores?: (ss: MatchLiveScore[]) => void
     onScoreUpdate?: (data: unknown) => void
     onError?:       (e: Event) => void
   }): () => void {
     const es = new EventSource('/api/scores/live')
-    if (handlers.onGoal)        es.addEventListener('goal',         (e) => { try { handlers.onGoal!(JSON.parse((e as MessageEvent).data)) } catch {} })
-    if (handlers.onLeaderboard) es.addEventListener('leaderboard',  (e) => { try { handlers.onLeaderboard!(JSON.parse((e as MessageEvent).data)) } catch {} })
-    if (handlers.onScoreUpdate) es.addEventListener('score-update', (e) => { try { handlers.onScoreUpdate!(JSON.parse((e as MessageEvent).data)) } catch {} })
+    const parse = (e: Event) => { try { return JSON.parse((e as MessageEvent).data) } catch { return null } }
+    if (handlers.onGoal)         es.addEventListener('goal',          (e) => { const d = parse(e); if (d) handlers.onGoal!(d) })
+    if (handlers.onLeaderboard)  es.addEventListener('leaderboard',   (e) => { const d = parse(e); if (d) handlers.onLeaderboard!(d) })
+    if (handlers.onMatchScore)   es.addEventListener('match-score',   (e) => { const d = parse(e); if (d) handlers.onMatchScore!(d) })
+    if (handlers.onMatchScores)  es.addEventListener('match-scores',  (e) => { const d = parse(e); if (d) handlers.onMatchScores!(d) })
+    if (handlers.onScoreUpdate)  es.addEventListener('score-update',  (e) => { const d = parse(e); if (d) handlers.onScoreUpdate!(d) })
     if (handlers.onError) es.onerror = handlers.onError
     return () => es.close()
   },

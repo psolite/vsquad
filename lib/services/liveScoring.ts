@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events'
-import { getAllSquads } from '../db'
+import { getAllSquads, upsertDailyPoints, getDailyPoints, getWalletTotalPoints, getAllWalletTotals } from '../db'
 import type { Player, SquadRecord } from '../db'
 import { pointsForEvent, playerMatches, EventType, POINTS } from './scoring'
 import { scoreEmitter } from './txodds/index'
-import type { GoalEvent, CardEvent } from './txodds/index'
+import type { GoalEvent, CardEvent, LineupsEvent } from './txodds/index'
 
 // ── Squad cache (async DB → sync access in event handlers) ────────────────────
 
@@ -21,20 +21,35 @@ export async function refreshSquadCache(): Promise<void> {
 
 export interface DiscoveredPlayer {
   txoddsId: number
+  name:     string
   team:     string
   events:   string[]
 }
 
 const _discovered = new Map<number, DiscoveredPlayer>()
 
+// Populated from the `lineups` stream action (fired pre-game with full rosters).
+// Keys are player normativeIds — same number as PlayerId in goal/card events.
+const _playerNames = new Map<number, { name: string; team: string }>()
+
 function recordDiscovery(playerId: number, team: string, event: string) {
-  if (!_discovered.has(playerId)) _discovered.set(playerId, { txoddsId: playerId, team, events: [] })
+  if (!_discovered.has(playerId)) {
+    const known = _playerNames.get(playerId)
+    _discovered.set(playerId, { txoddsId: playerId, name: known?.name ?? '', team: known?.team || team, events: [] })
+  }
   const entry = _discovered.get(playerId)!
+  if (!entry.name && _playerNames.has(playerId)) entry.name = _playerNames.get(playerId)!.name
   if (!entry.events.includes(event)) entry.events.push(event)
 }
 
 export function getDiscoveredPlayers(): DiscoveredPlayer[] {
   return Array.from(_discovered.values()).sort((a, b) => a.team.localeCompare(b.team) || a.txoddsId - b.txoddsId)
+}
+
+export function getPlayerNames(): Array<{ txoddsId: number; name: string; team: string }> {
+  return Array.from(_playerNames.entries())
+    .map(([txoddsId, { name, team }]) => ({ txoddsId, name, team }))
+    .sort((a, b) => a.team.localeCompare(b.team) || a.name.localeCompare(b.name))
 }
 
 // ── Live state ────────────────────────────────────────────────────────────────
@@ -81,7 +96,9 @@ export function applyMatchScore(
 ) {
   const parts = score.split(/[-:]/).map(Number)
   if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return
-  matchScores.set(fixtureId, { fixtureId, homeScore: parts[0], awayScore: parts[1], minute, matchStatus })
+  const entry: MatchLiveScore = { fixtureId, homeScore: parts[0], awayScore: parts[1], minute, matchStatus }
+  matchScores.set(fixtureId, entry)
+  liveScoringEmitter.emit('match-score', entry)
 }
 
 export function getMatchScores(): MatchLiveScore[] {
@@ -123,12 +140,23 @@ function handleScoringEvent(
   label:      string,
   playerId?:  number | null,
 ) {
+  // Resolve name + team from lineup map when the stream event lacks a player name
+  let resolvedName = playerName
+  let resolvedTeam = teamName
+  if (playerId != null && !resolvedName) {
+    const known = _playerNames.get(playerId)
+    if (known) {
+      resolvedName = known.name
+      resolvedTeam = resolvedTeam || known.team
+    }
+  }
+
   let matched = false
   for (const squad of _squadCache) {
     for (const player of Object.values(squad.squad) as Player[]) {
-      if (!player || !playerMatches(player, playerName, teamName, playerId)) continue
+      if (!player || !playerMatches(player, resolvedName, resolvedTeam, playerId)) continue
       applyEvent(squad.walletAddress, player, event)
-      console.log(`[scoring] ${label}: ${player.name} +${pointsForEvent(player, event)}pts`)
+      console.log(`[scoring] ${label}: ${player.name} (id=${playerId}) +${pointsForEvent(player, event)}pts`)
       matched = true
     }
   }
@@ -138,6 +166,14 @@ function handleScoringEvent(
 // ── Wire up TxOdds stream events ──────────────────────────────────────────────
 
 export function startLiveScoring() {
+  // Pre-game lineups: build normativeId → name map so goal/card events can resolve names
+  scoreEmitter.on('lineups', (e: LineupsEvent) => {
+    for (const p of e.players) {
+      _playerNames.set(p.normativeId, { name: p.name, team: p.team })
+    }
+    console.log(`[scoring] lineups: ${e.players.length} players loaded for fixture ${e.fixtureId}`)
+  })
+
   scoreEmitter.on('goal', (e: GoalEvent) => {
     if (e.fixtureId && e.score) applyMatchScore(e.fixtureId, e.score, e.minute, 'live')
     if (e.playerId != null && e.teamName) recordDiscovery(e.playerId, e.teamName, 'goal')
@@ -153,10 +189,67 @@ export function startLiveScoring() {
     if (data.fixtureId && data.score) {
       const finished = data.action === 'full_time' || data.action === 'match_end'
       applyMatchScore(data.fixtureId, data.score, data.minute, finished ? 'finished' : 'live')
+      if (finished) snapshotPoints().catch((e) => console.error('[scoring] snapshot failed:', e))
     }
   })
 
   console.log('[scoring] live scoring started')
+}
+
+// ── Daily points snapshot ─────────────────────────────────────────────────────
+
+function todayDate(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+export async function snapshotPoints(date?: string): Promise<void> {
+  const d = date ?? todayDate()
+  const tasks: Promise<void>[] = []
+  for (const [wallet, players] of Object.entries(state)) {
+    const playerPoints: Record<string, number> = {}
+    for (const [playerId, liveScore] of Object.entries(players)) {
+      if (liveScore.points !== 0) playerPoints[playerId] = liveScore.points
+    }
+    if (Object.keys(playerPoints).length > 0) {
+      tasks.push(upsertDailyPoints(wallet, d, playerPoints))
+    }
+  }
+  await Promise.all(tasks)
+  console.log(`[scoring] snapshot saved for ${d}: ${tasks.length} wallets`)
+}
+
+// Returns today's per-player points for one wallet, merging DB + in-memory.
+export async function getWalletDailyPoints(walletAddress: string, date?: string): Promise<Record<string, number>> {
+  const d = date ?? todayDate()
+  const inMem: Record<string, number> = {}
+  for (const [pid, ls] of Object.entries(state[walletAddress] ?? {})) {
+    if (ls.points !== 0) inMem[pid] = ls.points
+  }
+  if (Object.keys(inMem).length > 0) return inMem  // session is live — use live data
+  const saved = await getDailyPoints(walletAddress, d)
+  return saved?.playerPoints ?? {}
+}
+
+// Returns total accumulated per-player points for a wallet across all days.
+export async function getWalletAccumulatedPoints(walletAddress: string): Promise<Record<string, number>> {
+  const { playerPoints } = await getWalletTotalPoints(walletAddress)
+  // Merge with current in-memory session (avoids waiting for next snapshot)
+  for (const [pid, ls] of Object.entries(state[walletAddress] ?? {})) {
+    if (ls.points !== 0) playerPoints[pid] = (playerPoints[pid] ?? 0) + ls.points
+  }
+  return playerPoints
+}
+
+// Returns total points per wallet across all days (for leaderboard ranking).
+export async function getTotalLeaderboard(): Promise<Array<{ walletAddress: string; total: number }>> {
+  const dbTotals = await getAllWalletTotals()
+  const totalsMap = new Map(dbTotals.map(r => [r.walletAddress, r.total]))
+  // Add current session points not yet snapshotted
+  for (const [wallet, players] of Object.entries(state)) {
+    const sessionPts = Object.values(players).reduce((s, p) => s + p.points, 0)
+    totalsMap.set(wallet, (totalsMap.get(wallet) ?? 0) + sessionPts)
+  }
+  return Array.from(totalsMap.entries()).map(([walletAddress, total]) => ({ walletAddress, total }))
 }
 
 // ── Leaderboard builder ───────────────────────────────────────────────────────

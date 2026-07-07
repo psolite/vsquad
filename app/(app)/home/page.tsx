@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useSquadStore, filledCount, isComplete } from '@/store/squadStore'
 import { scoresApi } from '@/lib/api/scoresApi'
-import type { MatchesResponse, SquadLiveScore } from '@/lib/api/scoresApi'
+import type { MatchesResponse, SquadLiveScore, MatchLiveScore } from '@/lib/api/scoresApi'
 
 const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 
@@ -22,32 +22,64 @@ function MatchBadge({ status }: { status: 'upcoming' | 'live' | 'finished' }) {
 export default function DashboardHomePage() {
   const { publicKey, connected } = useWallet()
   const { squad, squadName } = useSquadStore()
-  const [points, setPoints] = useState<Record<string, number>>({})
-  const [matches, setMatches] = useState<MatchesResponse | null>(null)
+  const [todayPoints,  setTodayPoints]  = useState<Record<string, number>>({})
+  const [totalPoints,  setTotalPoints]  = useState<Record<string, number>>({})
+  const [matches,      setMatches]      = useState<MatchesResponse | null>(null)
   const [myLeaderboard, setMyLeaderboard] = useState<SquadLiveScore | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [liveMap,      setLiveMap]      = useState<Record<string, MatchLiveScore>>({})
+  const [loading,      setLoading]      = useState(true)
 
   useEffect(() => {
+    if (!publicKey) { setLoading(false); return }
+    const wallet = publicKey.toBase58()
     let cancelled = false
-    Promise.allSettled([scoresApi.points(), scoresApi.matches(), scoresApi.leaderboard()]).then(([pRes, mRes, lRes]) => {
+
+    Promise.allSettled([
+      scoresApi.points(wallet, 'today'),
+      scoresApi.points(wallet, 'total'),
+      scoresApi.matches(),
+      scoresApi.leaderboard(),
+    ]).then(([todayRes, totalRes, mRes, lRes]) => {
       if (cancelled) return
-      if (pRes.status === 'fulfilled') setPoints(pRes.value)
-      if (mRes.status === 'fulfilled') setMatches(mRes.value)
-      if (lRes.status === 'fulfilled' && publicKey) {
-        const wallet = publicKey.toBase58()
-        setMyLeaderboard(lRes.value.find(r => r.walletAddress === wallet) ?? null)
-      }
+      if (todayRes.status === 'fulfilled') setTodayPoints(todayRes.value)
+      if (totalRes.status === 'fulfilled') setTotalPoints(totalRes.value)
+      if (mRes.status    === 'fulfilled') setMatches(mRes.value)
+      if (lRes.status    === 'fulfilled') setMyLeaderboard(lRes.value.find(r => r.walletAddress === wallet) ?? null)
       setLoading(false)
     })
-    return () => { cancelled = true }
+
+    const unsub = scoresApi.subscribeToLive({
+      onMatchScores: (scores) => {
+        setLiveMap((prev) => {
+          const next = { ...prev }
+          for (const s of scores) next[s.fixtureId] = s
+          return next
+        })
+      },
+      onMatchScore: (s) => setLiveMap((prev) => ({ ...prev, [s.fixtureId]: s })),
+      onLeaderboard: (rows) => {
+        if (!publicKey) return
+        const wallet = publicKey.toBase58()
+        const myRow = rows.find(r => r.walletAddress === wallet)
+        if (!myRow) return
+        setMyLeaderboard(myRow)
+        // Extract per-player today points directly from live leaderboard data
+        const live: Record<string, number> = {}
+        for (const p of myRow.players) live[p.playerId] = p.points
+        setTodayPoints(live)
+      },
+    })
+
+    return () => { cancelled = true; unsub() }
   }, [publicKey])
 
   const players = [squad.gk, squad.def1, squad.def2, squad.fwd1, squad.fwd2].filter(Boolean) as NonNullable<typeof squad.gk>[]
-  const todayPoints = players.reduce((sum, p) => sum + (points[p.id] ?? 0), 0)
-  const totalPoints = myLeaderboard?.totalPoints ?? 0
+  const todayPts  = players.reduce((sum, p) => sum + (todayPoints[p.id] ?? 0), 0)
+  const totalPts  = players.reduce((sum, p) => sum + (totalPoints[p.id] ?? 0), 0) || (myLeaderboard?.totalPoints ?? 0)
   const squadFilled = filledCount(squad)
   const squadComplete = isComplete(squad)
   const todayFixtures = [...(matches?.live ?? []), ...(matches?.today ?? []), ...(matches?.finished ?? [])].slice(0, 6)
+  const liveCount = (matches?.live ?? []).length + Object.values(liveMap).filter(s => s.matchStatus === 'live').length
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '28px 28px 40px', background: '#0a0e1a' }}>
@@ -64,7 +96,7 @@ export default function DashboardHomePage() {
         <div style={{ background: 'linear-gradient(135deg, rgba(0,255,135,0.1) 0%, rgba(0,255,135,0.04) 100%)', border: '1px solid rgba(0,255,135,0.25)', borderRadius: '18px', padding: '26px 28px' }}>
           <p style={{ color: 'rgba(0,255,135,0.6)', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: '12px' }}>Today&apos;s Points</p>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', lineHeight: 1 }}>
-            <span style={{ color: '#00FF87', fontSize: '60px', fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em' }}>{loading ? '—' : todayPoints}</span>
+            <span style={{ color: '#00FF87', fontSize: '60px', fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em' }}>{loading ? '—' : todayPts}</span>
             <span style={{ color: 'rgba(0,255,135,0.4)', fontSize: '16px', fontWeight: 700, marginBottom: '7px' }}>pts</span>
           </div>
           <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', fontWeight: 500, marginTop: '10px' }}>Earned from today&apos;s matches</p>
@@ -73,7 +105,7 @@ export default function DashboardHomePage() {
         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', padding: '26px 28px' }}>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: '12px' }}>Total Points</p>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', lineHeight: 1 }}>
-            <span style={{ color: '#fff', fontSize: '60px', fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em' }}>{loading ? '—' : totalPoints}</span>
+            <span style={{ color: '#fff', fontSize: '60px', fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em' }}>{loading ? '—' : totalPts}</span>
             <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 700, marginBottom: '7px' }}>pts</span>
           </div>
           <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', fontWeight: 500, marginTop: '10px' }}>{myLeaderboard ? `Rank #${myLeaderboard.rank} · All time` : 'All time cumulative'}</p>
@@ -81,7 +113,7 @@ export default function DashboardHomePage() {
       </div>
 
       <div style={{ display: 'flex', gap: '12px', marginBottom: '18px' }}>
-        {[{ label: 'Squad', value: `${squadFilled}/5` }, { label: 'Live', value: loading ? '—' : String(matches?.live?.length ?? 0) }, { label: "Today's Matches", value: loading ? '—' : String(matches?.today?.length ?? 0) }, { label: 'Finished', value: loading ? '—' : String(matches?.finished?.length ?? 0) }].map(({ label, value }) => (
+        {[{ label: 'Squad', value: `${squadFilled}/5` }, { label: 'Live', value: loading ? '—' : String(liveCount > 0 ? liveCount : (matches?.live?.length ?? 0)) }, { label: "Today's Matches", value: loading ? '—' : String(matches?.today?.length ?? 0) }, { label: 'Finished', value: loading ? '—' : String(matches?.finished?.length ?? 0) }].map(({ label, value }) => (
           <div key={label} style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px 16px' }}>
             <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: '5px' }}>{label}</p>
             <p style={{ color: '#fff', fontSize: '20px', fontWeight: 900, lineHeight: 1 }}>{value}</p>
@@ -107,7 +139,8 @@ export default function DashboardHomePage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {players.map((player) => {
-                const pts = points[player.id] ?? 0
+                const todayPt = todayPoints[player.id] ?? 0
+                const totalPt = totalPoints[player.id] ?? 0
                 return (
                   <div key={player.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
                     <PositionBadge pos={player.position} />
@@ -116,8 +149,8 @@ export default function DashboardHomePage() {
                       <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 500 }}>{player.country}</p>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <p style={{ color: loading ? 'rgba(255,255,255,0.2)' : pts > 0 ? '#00FF87' : '#fff', fontSize: '16px', fontWeight: 900, lineHeight: 1 }}>{loading ? '—' : pts}</p>
-                      <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>today</p>
+                      <p style={{ color: loading ? 'rgba(255,255,255,0.2)' : todayPt > 0 ? '#00FF87' : '#fff', fontSize: '16px', fontWeight: 900, lineHeight: 1 }}>{loading ? '—' : todayPt}</p>
+                      <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>today · {totalPt} total</p>
                     </div>
                   </div>
                 )
@@ -125,11 +158,11 @@ export default function DashboardHomePage() {
               <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '10px', background: 'rgba(0,255,135,0.05)', border: '1px solid rgba(0,255,135,0.15)' }}>
                   <span style={{ color: '#00FF87', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Today</span>
-                  <span style={{ color: '#00FF87', fontSize: '18px', fontWeight: 900 }}>{loading ? '—' : todayPoints}</span>
+                  <span style={{ color: '#00FF87', fontSize: '18px', fontWeight: 900 }}>{loading ? '—' : todayPts}</span>
                 </div>
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total</span>
-                  <span style={{ color: '#fff', fontSize: '18px', fontWeight: 900 }}>{loading ? '—' : totalPoints}</span>
+                  <span style={{ color: '#fff', fontSize: '18px', fontWeight: 900 }}>{loading ? '—' : totalPts}</span>
                 </div>
               </div>
             </div>
@@ -149,21 +182,31 @@ export default function DashboardHomePage() {
             <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '13px', textAlign: 'center', paddingTop: '30px' }}>Check back on match days</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {todayFixtures.map((fixture) => (
-                <div key={fixture.fixtureId} style={{ padding: '10px 12px', borderRadius: '10px', background: fixture.status === 'live' ? 'rgba(0,255,135,0.04)' : 'rgba(255,255,255,0.03)', border: `1px solid ${fixture.status === 'live' ? 'rgba(0,255,135,0.15)' : 'rgba(255,255,255,0.05)'}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>{fixture.round}</span>
-                    <MatchBadge status={fixture.status} />
+              {todayFixtures.map((fixture) => {
+                const live = liveMap[fixture.fixtureId]
+                const isLiveNow = fixture.status === 'live' || live?.matchStatus === 'live'
+                const h = live?.homeScore ?? fixture.homeScore
+                const a = live?.awayScore ?? fixture.awayScore
+                const min = live?.minute ?? fixture.minute
+                return (
+                  <div key={fixture.fixtureId} style={{ padding: '10px 12px', borderRadius: '10px', background: isLiveNow ? 'rgba(0,255,135,0.04)' : 'rgba(255,255,255,0.03)', border: `1px solid ${isLiveNow ? 'rgba(0,255,135,0.15)' : 'rgba(255,255,255,0.05)'}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>{fixture.round}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {isLiveNow && min != null && <span style={{ color: '#00FF87', fontSize: '9px', fontWeight: 700 }}>{min}&apos;</span>}
+                        <MatchBadge status={isLiveNow ? 'live' : fixture.status} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700 }}>{fixture.homeTeam}</span>
+                      <span style={{ color: isLiveNow ? '#00FF87' : 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 900, padding: '0 10px' }}>
+                        {h !== null && a !== null ? `${h} – ${a}` : 'vs'}
+                      </span>
+                      <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700, textAlign: 'right' }}>{fixture.awayTeam}</span>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700 }}>{fixture.homeTeam}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 900, padding: '0 10px' }}>
-                      {fixture.homeScore !== null && fixture.awayScore !== null ? `${fixture.homeScore} – ${fixture.awayScore}` : 'vs'}
-                    </span>
-                    <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700, textAlign: 'right' }}>{fixture.awayTeam}</span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

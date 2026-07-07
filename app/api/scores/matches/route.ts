@@ -68,7 +68,9 @@ export async function GET() {
     const live     = matches.filter((m) => m.status === 'live')
     const today    = matches.filter((m) => m.status === 'upcoming' && isToday(m)).sort((a, b) => a.startTime - b.startTime)
     const upcoming = matches.filter((m) => m.status === 'upcoming' && !isToday(m)).sort((a, b) => a.startTime - b.startTime)
-    const finished = matches.filter((m) => m.status === 'finished').sort((a, b) => b.startTime - a.startTime)
+    const finished = matches
+      .filter((m) => m.status === 'finished' && m.homeScore != null && m.awayScore != null)
+      .sort((a, b) => b.startTime - a.startTime)
 
     return NextResponse.json({ live, today, finished, upcoming })
   } catch (err: unknown) {

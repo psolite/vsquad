@@ -6,7 +6,7 @@ import { useSquadStore, isComplete } from '@/store/squadStore'
 import { tournamentApi } from '@/lib/api/tournamentApi'
 import type { Tournament, CreateTournamentInput } from '@/lib/api/tournamentApi'
 import { scoresApi } from '@/lib/api/scoresApi'
-import type { SquadLiveScore, GoalEvent, Fixture, MatchesResponse } from '@/lib/api/scoresApi'
+import type { SquadLiveScore, GoalEvent, Fixture, MatchesResponse, MatchLiveScore } from '@/lib/api/scoresApi'
 import FlagImg from '@/components/FlagImg'
 import { countryColors } from '@/data/countryColors'
 
@@ -289,7 +289,11 @@ export function FixturesPanel() {
   const [data,    setData]    = useState<MatchesResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState<string | null>(null)
-  const [liveMap, setLiveMap] = useState<Record<string, { homeScore: number; awayScore: number; minute: number }>>({})
+  const [liveMap, setLiveMap] = useState<Record<string, MatchLiveScore>>({})
+
+  function applyScore(s: MatchLiveScore) {
+    setLiveMap((prev) => ({ ...prev, [s.fixtureId]: s }))
+  }
 
   useEffect(() => {
     scoresApi.matches()
@@ -298,27 +302,34 @@ export function FixturesPanel() {
       .finally(() => setLoading(false))
 
     const cleanup = scoresApi.subscribeToLive({
-      onScoreUpdate: (raw) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const d = raw as any
-        const fid    = String(d.fixtureId ?? d.fixture_id ?? '')
-        const score  = d.score ?? d.Score ?? ''
-        const minute = Number(d.minute ?? d.Minute ?? 0)
-        if (!fid || !score) return
-        const parts = score.split(/[-:]/).map(Number)
-        if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return
-        setLiveMap((prev) => ({ ...prev, [fid]: { homeScore: parts[0], awayScore: parts[1], minute } }))
+      // Batch snapshot on connect (sends all currently known live scores)
+      onMatchScores: (scores) => {
+        setLiveMap((prev) => {
+          const next = { ...prev }
+          for (const s of scores) next[s.fixtureId] = s
+          return next
+        })
       },
+      // Individual score update as each event fires
+      onMatchScore: applyScore,
       onGoal: (e) => {
         const parts = (e.score ?? '').split(/[-:]/).map(Number)
         if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return
-        setLiveMap((prev) => ({ ...prev, [e.fixtureId]: { homeScore: parts[0], awayScore: parts[1], minute: e.minute } }))
+        setLiveMap((prev) => ({
+          ...prev,
+          [e.fixtureId]: {
+            fixtureId: e.fixtureId,
+            homeScore: parts[0], awayScore: parts[1],
+            minute: e.minute, matchStatus: 'live',
+          },
+        }))
       },
     })
 
+    // Refresh fixture list every 2 min to pick up newly kicked-off matches
     const interval = setInterval(() => {
       scoresApi.matches().then(setData).catch(() => {})
-    }, 60_000)
+    }, 2 * 60_000)
 
     return () => { cleanup(); clearInterval(interval) }
   }, [])
@@ -340,7 +351,7 @@ export function FixturesPanel() {
           <SectionHeader label="Today" count={todayAll.length} color="#facc15" />
           <div style={grid}>
             {data.live.map((f) => <MatchCard key={f.fixtureId} f={f} liveOverride={liveMap[f.fixtureId]} />)}
-            {(data.today ?? []).map((f) => <MatchCard key={f.fixtureId} f={f} />)}
+            {(data.today ?? []).map((f) => <MatchCard key={f.fixtureId} f={f} liveOverride={liveMap[f.fixtureId]} />)}
           </div>
         </>
       )}
