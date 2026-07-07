@@ -41,6 +41,7 @@ export default function MySquadPage() {
   const [saved, setSaved] = useState(false);
   const [showPickModal, setShowPickModal] = useState(false);
   const [checkingServer, setCheckingServer] = useState(!complete);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Local store is in-memory only — if it's empty (fresh session, direct nav,
   // or a refresh), pull the saved squad from the server before deciding there
@@ -50,7 +51,10 @@ export default function MySquadPage() {
     squadApi
       .get(wallet)
       .then((record) => loadSquad(record.squad, record.squadName, record.locked))
-      .catch(() => {})
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : "Failed to load squad";
+        if (message !== "Squad not found") setLoadError(message);
+      })
       .finally(() => setCheckingServer(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wallet]);
@@ -80,6 +84,24 @@ export default function MySquadPage() {
         <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "13px" }}>
           Loading your squad…
         </p>
+      </div>
+    );
+  }
+  if (loadError) {
+    return (
+      <div
+        className="flex-1 flex flex-col items-center justify-center gap-3"
+        style={{ minHeight: 0, background: "#0a0e1a", padding: "24px", textAlign: "center" }}
+      >
+        <p style={{ color: "#f87171", fontSize: "13px" }}>
+          Couldn&apos;t load your saved squad: {loadError}
+        </p>
+        <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
+          Wallet: {wallet ? `${wallet.slice(0, 4)}…${wallet.slice(-4)}` : "—"}
+        </p>
+        <a href="/squad" style={{ color: "#00FF87", fontSize: "12px", fontWeight: 700 }}>
+          Build your squad →
+        </a>
       </div>
     );
   }

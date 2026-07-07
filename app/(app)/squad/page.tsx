@@ -27,12 +27,10 @@ export default function SquadBuilderPage() {
   const [posFilter, setPosFilter] = useState<Position | 'ALL'>('ALL')
   const [modalPlayer, setModalPlayer] = useState<Player | null>(null)
 
-  if (!connected) { router.push('/'); return null }
-
   const activePosition: Position | null = selectedSlot ? slotPosition[selectedSlot] : null
-  const usedIds = new Set(Object.values(squad).filter(Boolean).map((p) => p!.id))
 
   const filtered = useMemo(() => {
+    const usedIds = new Set(Object.values(squad).filter(Boolean).map((p) => p!.id))
     const pos = posFilter !== 'ALL' ? posFilter : activePosition
     return players.filter((p) => {
       if (usedIds.has(p.id)) return false
@@ -41,8 +39,9 @@ export default function SquadBuilderPage() {
           !p.country.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, posFilter, activePosition, usedIds])
+  }, [search, posFilter, activePosition, squad])
+
+  if (!connected) { router.push('/'); return null }
 
   function handleSlotClick(slot: SlotId) {
     setSelectedSlot(selectedSlot === slot ? null : slot)
