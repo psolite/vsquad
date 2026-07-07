@@ -103,7 +103,7 @@ export default function MySquadPage() {
           </div>
         </div>
 
-        <div className="split-list-col overflow-y-auto" style={{ padding: '20px 24px', gap: '18px' }}>
+        <div className="split-list-col-scroll" style={{ padding: '20px 24px', gap: '18px' }}>
 
           <div>
             <label style={{ display: 'block', marginBottom: '8px', color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>

@@ -161,7 +161,7 @@ export default function SquadBuilderPage() {
             </div>
           </div>
 
-          <div className="overflow-y-auto flex-1" style={{ minHeight: 0 }}>
+          <div className="builder-list-scroll">
             {filtered.length === 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '120px' }}>
                 <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '13px' }}>No players found</p>
