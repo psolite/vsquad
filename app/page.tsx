@@ -28,23 +28,14 @@ export default function LandingPage() {
 
   return (
     <div
-      className="relative flex flex-col items-center justify-center flex-1 overflow-hidden"
+      className="landing-page relative flex flex-col items-center justify-center flex-1 overflow-hidden"
       style={{ minHeight: "100vh" }}
     >
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          backgroundImage: "url(/BackgroundImage.png)",
-          backgroundSize: "cover",
-          backgroundPosition: "center bottom",
-        }}
-      />
-
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "linear-gradient(to bottom, rgba(4,8,9,0.55) 0%, rgba(4,8,9,0.3) 40%, rgba(4,8,9,0.7) 100%)",
+            "linear-gradient(to bottom, rgba(4,8,9,0.15) 0%, rgba(4,8,9,0.25) 40%, rgba(4,8,9,0.7) 100%)",
         }}
       />
 

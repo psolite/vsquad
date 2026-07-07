@@ -9,6 +9,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Landing page background — set on body so it's guaranteed to start at the
+   true top of the page, with no dependency on any component's positioning. */
+body:has(.landing-page) {
+  background-image: url(/BackgroundImage.png);
+  background-size: cover;
+  background-position: center bottom;
+  background-attachment: fixed;
+}
+
 html, body { height: 100%; }
 
 /* ── Custom scrollbars ─────────────────────────────── */
