@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSquad, deleteSquad } from '@/lib/db'
-import { refreshSquadCache } from '@/lib/services/liveScoring'
 
 type Params = { params: Promise<{ wallet: string }> }
 
@@ -18,8 +17,15 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const { wallet } = await params
-  const ok = await deleteSquad(wallet)
-  if (!ok) return NextResponse.json({ error: 'Squad not found' }, { status: 404 })
-  refreshSquadCache().catch(() => {})
-  return NextResponse.json({ message: 'Squad deleted' })
+  try {
+    const ok = await deleteSquad(wallet)
+    if (!ok) return NextResponse.json({ error: 'Squad not found' }, { status: 404 })
+    // Loaded lazily — pulls in the whole TxOdds/Solana toolchain, which has
+    // no business being a hard dependency of "delete a row from Postgres".
+    import('@/lib/services/liveScoring').then((m) => m.refreshSquadCache()).catch(() => {})
+    return NextResponse.json({ message: 'Squad deleted' })
+  } catch (err: unknown) {
+    console.error('[squads] failed to delete squad for wallet', wallet, err)
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to delete squad' }, { status: 500 })
+  }
 }
