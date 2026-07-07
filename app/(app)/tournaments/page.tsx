@@ -13,7 +13,7 @@ import { countryColors } from '@/data/countryColors'
 const STATUS_STYLE: Record<string, { label: string; bg: string; color: string }> = {
   open:   { label: 'Open',  bg: 'rgba(0,255,135,0.12)',   color: '#00FF87' },
   active: { label: 'Live',  bg: 'rgba(250,204,21,0.12)',  color: '#facc15' },
-  ended:  { label: 'Ended', bg: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.3)' },
+  ended:  { label: 'Ended', bg: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)' },
 }
 
 function fmt(iso: string) {
@@ -40,7 +40,7 @@ const EMPTY_FORM: CreateTournamentInput = {
 function InputRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-      <label style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+      <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
         {label}
       </label>
       {children}
@@ -90,15 +90,15 @@ function LeaderboardPanel({ wallet }: { wallet: string }) {
     return () => cleanupRef.current?.()
   }, [])
 
-  if (loading) return <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>Loading leaderboard…</p>
-  if (rows.length === 0) return <div style={{ textAlign: 'center', marginTop: '60px' }}><p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>No squads yet — be the first to join a tournament!</p></div>
+  if (loading) return <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>Loading leaderboard…</p>
+  if (rows.length === 0) return <div style={{ textAlign: 'center', marginTop: '60px' }}><p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>No squads yet — be the first to join a tournament!</p></div>
 
   return (
     <>
       {toast && <GoalToast event={toast} onDone={() => setToast(null)} />}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
         <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: live ? '#00FF87' : '#facc15', boxShadow: live ? '0 0 6px #00FF87' : 'none' }} />
-        <span style={{ color: live ? '#00FF87' : 'rgba(255,255,255,0.35)', fontSize: '11px', fontWeight: 700 }}>{live ? 'Live' : 'Last snapshot'} — {rows.length} squads</span>
+        <span style={{ color: live ? '#00FF87' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700 }}>{live ? 'Live' : 'Last snapshot'} — {rows.length} squads</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {rows.map((row) => {
@@ -115,30 +115,30 @@ function LeaderboardPanel({ wallet }: { wallet: string }) {
                     <span style={{ color: isMe ? '#00FF87' : '#fff', fontWeight: 900, fontSize: '14px' }}>{row.squadName}</span>
                     {isMe && <span style={{ background: 'rgba(0,255,135,0.12)', color: '#00FF87', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '1px 6px', borderRadius: '4px' }}>You</span>}
                   </div>
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontFamily: 'monospace' }}>{shortWallet(row.walletAddress)}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontFamily: 'monospace' }}>{shortWallet(row.walletAddress)}</span>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ color: isMe ? '#00FF87' : '#fff', fontSize: '22px', fontWeight: 900, lineHeight: 1 }}>{row.totalPoints}</div>
-                  <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>pts</div>
+                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>pts</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {row.players.map((p) => (
                   <div key={p.playerId} style={{ background: p.points > 0 ? 'rgba(0,255,135,0.08)' : 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '5px 9px', minWidth: '60px' }}>
-                    <div style={{ color: p.points > 0 ? '#00FF87' : 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700 }}>{p.name.split(' ').pop()}</div>
+                    <div style={{ color: p.points > 0 ? '#00FF87' : 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700 }}>{p.name.split(' ').pop()}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                      <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: '9px', textTransform: 'uppercase' }}>{p.position}</span>
+                      <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', textTransform: 'uppercase' }}>{p.position}</span>
                       {p.goals > 0 && <span style={{ fontSize: '9px' }}>⚽{p.goals}</span>}
                       {p.assists > 0 && <span style={{ fontSize: '9px', color: '#60a5fa' }}>A{p.assists}</span>}
                       {p.yellowCards > 0 && <span style={{ fontSize: '9px' }}>🟨</span>}
                       {p.redCards > 0 && <span style={{ fontSize: '9px' }}>🟥</span>}
-                      <span style={{ color: p.points > 0 ? '#00FF87' : 'rgba(255,255,255,0.25)', fontSize: '10px', fontWeight: 700, marginLeft: '2px' }}>{p.points > 0 ? `+${p.points}` : '0'}</span>
+                      <span style={{ color: p.points > 0 ? '#00FF87' : 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700, marginLeft: '2px' }}>{p.points > 0 ? `+${p.points}` : '0'}</span>
                     </div>
                   </div>
                 ))}
               </div>
               {topScorer && topScorer.points > 0 && (
-                <div style={{ marginTop: '8px', color: 'rgba(255,255,255,0.25)', fontSize: '10px' }}>
+                <div style={{ marginTop: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '10px' }}>
                   Top scorer: <span style={{ color: '#facc15', fontWeight: 700 }}>{topScorer.name}</span> · {topScorer.points} pts
                 </div>
               )}
@@ -209,11 +209,11 @@ function MatchCard({ f, liveOverride }: { f: Fixture; liveOverride?: { homeScore
   return (
     <div style={{ background: isLive ? 'rgba(250,204,21,0.04)' : '#0d1320', border: `1px solid ${isLive ? 'rgba(250,204,21,0.25)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '14px', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
-        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           {stage}
-          {!isLive && !isFinished && <> · <span style={{ color: 'rgba(255,255,255,0.5)' }}>{fmtTime(f.startTime)}</span></>}
+          {!isLive && !isFinished && <> · <span style={{ color: 'rgba(255,255,255,0.7)' }}>{fmtTime(f.startTime)}</span></>}
           {isLive && minute != null && <> · <span style={{ color: '#facc15' }}>{minute}&apos;</span></>}
-          {isFinished && <> · <span style={{ color: 'rgba(255,255,255,0.3)' }}>FT</span></>}
+          {isFinished && <> · <span style={{ color: 'rgba(255,255,255,0.7)' }}>FT</span></>}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {isLive && (
@@ -222,7 +222,7 @@ function MatchCard({ f, liveOverride }: { f: Fixture; liveOverride?: { homeScore
               <span style={{ color: '#facc15', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Live</span>
             </div>
           )}
-          {roundLbl && <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{roundLbl}</span>}
+          {roundLbl && <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{roundLbl}</span>}
         </div>
       </div>
 
@@ -230,7 +230,7 @@ function MatchCard({ f, liveOverride }: { f: Fixture; liveOverride?: { homeScore
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px' }}>
           <FlagImg country={resolveTeam(f.homeTeam)} size={32} shape="rect" />
           <span style={{ color: '#fff', fontWeight: 800, fontSize: '13px', textAlign: 'center' }}>{f.homeTeam}</span>
-          <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em' }}>{teamCode(f.homeTeam)}</span>
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em' }}>{teamCode(f.homeTeam)}</span>
         </div>
 
         <div style={{ flexShrink: 0, textAlign: 'center', minWidth: '90px' }}>
@@ -238,11 +238,11 @@ function MatchCard({ f, liveOverride }: { f: Fixture; liveOverride?: { homeScore
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                 <span style={{ color: isLive ? '#facc15' : '#fff', fontWeight: 900, fontSize: '28px', lineHeight: 1 }}>{homeScore}</span>
-                <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 300, fontSize: '20px' }}>–</span>
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 300, fontSize: '20px' }}>–</span>
                 <span style={{ color: isLive ? '#facc15' : '#fff', fontWeight: 900, fontSize: '28px', lineHeight: 1 }}>{awayScore}</span>
               </div>
               {isLive && <div style={{ color: '#facc15', fontSize: '10px', fontWeight: 700, marginTop: '3px' }}>{periodLabel ?? (minute != null ? `${minute}'` : 'Live')}</div>}
-              {isFinished && <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '3px' }}>{periodLabel ?? 'FT'}</div>}
+              {isFinished && <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '3px' }}>{periodLabel ?? 'FT'}</div>}
             </div>
           ) : isLive ? (
             <div>
@@ -254,13 +254,13 @@ function MatchCard({ f, liveOverride }: { f: Fixture; liveOverride?: { homeScore
             </div>
           ) : isFinished ? (
             <div>
-              <div style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '14px' }}>{fmtTime(f.startTime)}</div>
-              <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '3px' }}>Full Time</div>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '14px' }}>{fmtTime(f.startTime)}</div>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '3px' }}>Full Time</div>
             </div>
           ) : (
             <div>
-              <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 900, fontSize: '13px', letterSpacing: '0.15em', textTransform: 'uppercase' }}>VS</span>
-              <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '10px', marginTop: '4px' }}>{fmtDate(f.startTime)}</div>
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 900, fontSize: '13px', letterSpacing: '0.15em', textTransform: 'uppercase' }}>VS</span>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', marginTop: '4px' }}>{fmtDate(f.startTime)}</div>
             </div>
           )}
         </div>
@@ -268,18 +268,18 @@ function MatchCard({ f, liveOverride }: { f: Fixture; liveOverride?: { homeScore
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px' }}>
           <FlagImg country={resolveTeam(f.awayTeam)} size={32} shape="rect" />
           <span style={{ color: '#fff', fontWeight: 800, fontSize: '13px', textAlign: 'center' }}>{f.awayTeam}</span>
-          <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em' }}>{teamCode(f.awayTeam)}</span>
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em' }}>{teamCode(f.awayTeam)}</span>
         </div>
       </div>
     </div>
   )
 }
 
-function SectionHeader({ label, count, color = 'rgba(255,255,255,0.3)' }: { label: string; count: number; color?: string }) {
+function SectionHeader({ label, count, color = 'rgba(255,255,255,0.7)' }: { label: string; count: number; color?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
       <span style={{ color, fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em' }}>{label}</span>
-      <span style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, padding: '1px 7px', borderRadius: '10px' }}>{count}</span>
+      <span style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700, padding: '1px 7px', borderRadius: '10px' }}>{count}</span>
       <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
     </div>
   )
@@ -334,13 +334,13 @@ export function FixturesPanel() {
     return () => { cleanup(); clearInterval(interval) }
   }, [])
 
-  if (loading) return <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>Loading matches…</p>
+  if (loading) return <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>Loading matches…</p>
   if (error)   return <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>{error}</p>
   if (!data)   return null
 
   const todayAll = [...(data.live ?? []), ...(data.today ?? [])]
   const total    = todayAll.length + data.finished.length + data.upcoming.length
-  if (total === 0) return <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>No matches found</p>
+  if (total === 0) return <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>No matches found</p>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -361,7 +361,7 @@ export function FixturesPanel() {
       )}
       {data.finished.length > 0 && (
         <>
-          <SectionHeader label="Results" count={data.finished.length} color="rgba(255,255,255,0.4)" />
+          <SectionHeader label="Results" count={data.finished.length} color="rgba(255,255,255,0.7)" />
           <div className="match-grid" style={{ gap: '8px' }}>{data.finished.map((f) => <MatchCard key={f.fixtureId} f={f} />)}</div>
         </>
       )}
@@ -456,7 +456,7 @@ export default function TournamentPage() {
       <div className="builder-header-row" style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0, background: 'rgba(255,255,255,0.02)' }}>
         <div>
           <h2 style={{ color: '#fff', fontWeight: 900, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.12em', margin: 0 }}>VSquad Hub</h2>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '2px', letterSpacing: '0.05em' }}>FIFA World Cup 2026 · Live scores &amp; leaderboard</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', marginTop: '2px', letterSpacing: '0.05em' }}>FIFA World Cup 2026 · Live scores &amp; leaderboard</p>
         </div>
         {tab === 'tournaments' && connected && (
           <button
@@ -473,7 +473,7 @@ export default function TournamentPage() {
       <div style={{ display: 'flex', gap: '2px', padding: '10px 24px 0', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0, background: 'rgba(255,255,255,0.01)' }}>
         {TABS.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '7px 14px', borderRadius: '8px 8px 0 0', border: 'none', background: tab === t.id ? 'rgba(0,255,135,0.1)' : 'transparent', color: tab === t.id ? '#00FF87' : 'rgba(255,255,255,0.35)', fontSize: '11px', fontWeight: tab === t.id ? 900 : 600, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer', borderBottom: tab === t.id ? '2px solid #00FF87' : '2px solid transparent', transition: 'all 0.15s' }}
+            style={{ padding: '7px 14px', borderRadius: '8px 8px 0 0', border: 'none', background: tab === t.id ? 'rgba(0,255,135,0.1)' : 'transparent', color: tab === t.id ? '#00FF87' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: tab === t.id ? 900 : 600, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer', borderBottom: tab === t.id ? '2px solid #00FF87' : '2px solid transparent', transition: 'all 0.15s' }}
           >
             {t.label}
             {t.id === 'leaderboard' && (
@@ -501,7 +501,7 @@ export default function TournamentPage() {
                 </div>
               )}
 
-              {loading && <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>Loading tournaments…</p>}
+              {loading && <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>Loading tournaments…</p>}
               {error   && <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>{error}</p>}
 
               {!loading && !error && (
@@ -522,18 +522,18 @@ export default function TournamentPage() {
                               {isJoined && <span style={{ background: 'rgba(0,255,135,0.12)', color: '#00FF87', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 8px', borderRadius: '5px' }}>Joined</span>}
                             </div>
                             <h3 style={{ color: '#fff', fontWeight: 900, fontSize: '14px', margin: '0 0 4px' }}>{t.name}</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.38)', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>{t.description}</p>
+                            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>{t.description}</p>
                           </div>
 
                           {isJoined ? (
                             <button onClick={() => handleLeave(t.id)} disabled={isBusy}
-                              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: isBusy ? 'default' : 'pointer', flexShrink: 0 }}
+                              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: isBusy ? 'default' : 'pointer', flexShrink: 0 }}
                               onMouseEnter={e => { if (!isBusy) { e.currentTarget.style.borderColor = '#f87171'; e.currentTarget.style.color = '#f87171' } }}
-                              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}
                             >{isBusy ? '…' : 'Leave'}</button>
                           ) : (
                             <button onClick={() => canAct && handleJoin(t.id)} disabled={!canAct || isBusy}
-                              style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: canAct ? '#00FF87' : 'rgba(255,255,255,0.07)', color: canAct ? '#0a0e1a' : 'rgba(255,255,255,0.2)', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: canAct && !isBusy ? 'pointer' : 'default', flexShrink: 0 }}
+                              style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: canAct ? '#00FF87' : 'rgba(255,255,255,0.07)', color: canAct ? '#0a0e1a' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: canAct && !isBusy ? 'pointer' : 'default', flexShrink: 0 }}
                               onMouseEnter={e => { if (canAct && !isBusy) e.currentTarget.style.background = '#00e07a' }}
                               onMouseLeave={e => { if (canAct && !isBusy) e.currentTarget.style.background = '#00FF87' }}
                             >{isBusy ? '…' : 'Join'}</button>
@@ -541,14 +541,14 @@ export default function TournamentPage() {
                         </div>
 
                         <div style={{ display: 'flex', gap: '16px', marginBottom: '10px' }}>
-                          {t.prize && <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>Prize: {t.prize}</span>}
-                          <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px' }}>{fmt(t.startDate)} – {fmt(t.endDate)}</span>
+                          {t.prize && <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>Prize: {t.prize}</span>}
+                          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>{fmt(t.startDate)} – {fmt(t.endDate)}</span>
                         </div>
 
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Participants</span>
-                            <span style={{ color: 'rgba(255,255,255,0.38)', fontSize: '10px', fontWeight: 700 }}>{t.participants.length.toLocaleString()} / {t.maxParticipants.toLocaleString()}</span>
+                            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Participants</span>
+                            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700 }}>{t.participants.length.toLocaleString()} / {t.maxParticipants.toLocaleString()}</span>
                           </div>
                           <div style={{ height: '3px', background: 'rgba(255,255,255,0.07)', borderRadius: '2px', overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${Math.min(pct, 100)}%`, background: '#00FF87', borderRadius: '2px' }} />
@@ -556,11 +556,11 @@ export default function TournamentPage() {
                           {t.participants.length > 0 && (
                             <div style={{ display: 'flex', gap: '5px', marginTop: '7px', flexWrap: 'wrap' }}>
                               {t.participants.slice(0, 6).map((addr) => (
-                                <span key={addr} style={{ background: addr === wallet ? 'rgba(0,255,135,0.12)' : 'rgba(255,255,255,0.05)', color: addr === wallet ? '#00FF87' : 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', fontFamily: 'monospace' }}>
+                                <span key={addr} style={{ background: addr === wallet ? 'rgba(0,255,135,0.12)' : 'rgba(255,255,255,0.05)', color: addr === wallet ? '#00FF87' : 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', fontFamily: 'monospace' }}>
                                   {shortWallet(addr)}
                                 </span>
                               ))}
-                              {t.participants.length > 6 && <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '10px', padding: '2px 0' }}>+{t.participants.length - 6} more</span>}
+                              {t.participants.length > 6 && <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', padding: '2px 0' }}>+{t.participants.length - 6} more</span>}
                             </div>
                           )}
                         </div>
@@ -583,10 +583,10 @@ export default function TournamentPage() {
             style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '460px', background: '#0f1923', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', padding: '28px 24px 24px', maxHeight: '90vh', overflowY: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button onClick={() => setShowCreate(false)} style={{ position: 'absolute', top: '14px', right: '14px', background: 'rgba(255,255,255,0.07)', border: 'none', cursor: 'pointer', width: '32px', height: '32px', borderRadius: '50%', color: 'rgba(255,255,255,0.45)', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            <button onClick={() => setShowCreate(false)} style={{ position: 'absolute', top: '14px', right: '14px', background: 'rgba(255,255,255,0.07)', border: 'none', cursor: 'pointer', width: '32px', height: '32px', borderRadius: '50%', color: 'rgba(255,255,255,0.7)', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
 
             <h3 style={{ color: '#fff', fontWeight: 900, fontSize: '16px', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>Create Tournament</h3>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: '0 0 22px' }}>Set up your own league for World Cup 2026</p>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', margin: '0 0 22px' }}>Set up your own league for World Cup 2026</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <InputRow label="Tournament Name *">
@@ -633,7 +633,7 @@ export default function TournamentPage() {
               {createError && <p style={{ color: '#f87171', fontSize: '12px', margin: 0 }}>{createError}</p>}
               <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
                 <button onClick={() => setShowCreate(false)}
-                  style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer' }}>
                   Cancel
                 </button>
                 <button onClick={handleCreate} disabled={creating}

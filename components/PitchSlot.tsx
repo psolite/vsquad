@@ -45,7 +45,7 @@ export default function PitchSlot({ label, player, isSelected, onClick, onRemove
         <Jersey primary={colors.primary} secondary={colors.secondary} empty={!player} />
         {!player && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-lg font-black leading-none ${isSelected ? 'text-[#00FF87]' : 'text-white/40'}`}>+</span>
+            <span className={`text-lg font-black leading-none ${isSelected ? 'text-[#00FF87]' : 'text-white/70'}`}>+</span>
           </div>
         )}
         {isSelected && <div className="absolute inset-0 rounded ring-2 ring-[#00FF87]/70 animate-pulse pointer-events-none" />}
@@ -54,7 +54,7 @@ export default function PitchSlot({ label, player, isSelected, onClick, onRemove
         )}
       </div>
 
-      <div className={`mt-1 w-full px-1 py-[3px] rounded-sm text-center transition-colors ${player ? 'bg-[#0d1b2a] text-white' : isSelected ? 'bg-[#00FF87]/20 text-[#00FF87]' : 'bg-[#0d1b2a]/80 text-white/35'}`}>
+      <div className={`mt-1 w-full px-1 py-[3px] rounded-sm text-center transition-colors ${player ? 'bg-[#0d1b2a] text-white' : isSelected ? 'bg-[#00FF87]/20 text-[#00FF87]' : 'bg-[#0d1b2a]/80 text-white/70'}`}>
         <span className="block text-[10px] font-bold uppercase tracking-wide truncate leading-tight">
           {player ? player.name.split(' ').slice(-1)[0] : label}
         </span>

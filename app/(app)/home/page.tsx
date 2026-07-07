@@ -15,8 +15,8 @@ function PositionBadge({ pos }: { pos: string }) {
 
 function MatchBadge({ status }: { status: 'upcoming' | 'live' | 'finished' }) {
   if (status === 'live') return <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#00FF87', fontSize: '10px', fontWeight: 800 }}><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF87', boxShadow: '0 0 6px #00FF87', display: 'inline-block' }} />LIVE</span>
-  if (status === 'finished') return <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700 }}>FT</span>
-  return <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700 }}>Soon</span>
+  if (status === 'finished') return <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700 }}>FT</span>
+  return <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700 }}>Soon</span>
 }
 
 export default function DashboardHomePage() {
@@ -85,10 +85,10 @@ export default function DashboardHomePage() {
     <div style={{ height: '100%', overflowY: 'auto', padding: '28px 28px 40px', background: '#0a0e1a' }} className="dash-page">
 
       <div style={{ marginBottom: '22px' }}>
-        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '6px' }}>{today}</p>
+        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '6px' }}>{today}</p>
         <h1 style={{ color: '#fff', fontSize: '26px', fontWeight: 900, letterSpacing: '-0.01em', lineHeight: 1 }}>
           Dashboard
-          {connected && publicKey && <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400, fontSize: '14px', marginLeft: '12px', letterSpacing: 0 }}>{publicKey.toBase58().slice(0, 4)}…{publicKey.toBase58().slice(-4)}</span>}
+          {connected && publicKey && <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400, fontSize: '14px', marginLeft: '12px', letterSpacing: 0 }}>{publicKey.toBase58().slice(0, 4)}…{publicKey.toBase58().slice(-4)}</span>}
         </h1>
       </div>
 
@@ -99,23 +99,23 @@ export default function DashboardHomePage() {
             <span style={{ color: '#00FF87', fontSize: '60px', fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em' }}>{loading ? '—' : todayPts}</span>
             <span style={{ color: 'rgba(0,255,135,0.4)', fontSize: '16px', fontWeight: 700, marginBottom: '7px' }}>pts</span>
           </div>
-          <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', fontWeight: 500, marginTop: '10px' }}>Earned from today&apos;s matches</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 500, marginTop: '10px' }}>Earned from today&apos;s matches</p>
         </div>
 
         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', padding: '26px 28px' }}>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: '12px' }}>Total Points</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: '12px' }}>Total Points</p>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', lineHeight: 1 }}>
             <span style={{ color: '#fff', fontSize: '60px', fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em' }}>{loading ? '—' : totalPts}</span>
-            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 700, marginBottom: '7px' }}>pts</span>
+            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '16px', fontWeight: 700, marginBottom: '7px' }}>pts</span>
           </div>
-          <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', fontWeight: 500, marginTop: '10px' }}>{myLeaderboard ? `Rank #${myLeaderboard.rank} · All time` : 'All time cumulative'}</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 500, marginTop: '10px' }}>{myLeaderboard ? `Rank #${myLeaderboard.rank} · All time` : 'All time cumulative'}</p>
         </div>
       </div>
 
       <div className="stats-row" style={{ gap: '12px', marginBottom: '18px' }}>
         {[{ label: 'Squad', value: `${squadFilled}/5` }, { label: 'Live', value: loading ? '—' : String(liveCount > 0 ? liveCount : (matches?.live?.length ?? 0)) }, { label: "Today's Matches", value: loading ? '—' : String(matches?.today?.length ?? 0) }, { label: 'Finished', value: loading ? '—' : String(matches?.finished?.length ?? 0) }].map(({ label, value }) => (
           <div key={label} style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px 16px' }}>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: '5px' }}>{label}</p>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: '5px' }}>{label}</p>
             <p style={{ color: '#fff', fontSize: '20px', fontWeight: 900, lineHeight: 1 }}>{value}</p>
           </div>
         ))}
@@ -125,7 +125,7 @@ export default function DashboardHomePage() {
         <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '22px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '3px' }}>My Squad</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '3px' }}>My Squad</p>
               <p style={{ color: '#fff', fontSize: '15px', fontWeight: 800 }}>{squadName || 'Unnamed Squad'}</p>
             </div>
             {squadComplete && <span style={{ background: 'rgba(0,255,135,0.1)', border: '1px solid rgba(0,255,135,0.2)', color: '#00FF87', fontSize: '10px', fontWeight: 800, padding: '4px 10px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Complete</span>}
@@ -133,7 +133,7 @@ export default function DashboardHomePage() {
 
           {players.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '30px 0' }}>
-              <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '13px', marginBottom: '6px' }}>No squad built yet</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginBottom: '6px' }}>No squad built yet</p>
               <a href="/squad" style={{ color: '#00FF87', fontSize: '12px', fontWeight: 700, textDecoration: 'none' }}>Build your squad →</a>
             </div>
           ) : (
@@ -146,11 +146,11 @@ export default function DashboardHomePage() {
                     <PositionBadge pos={player.position} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ color: '#fff', fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.name}</p>
-                      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 500 }}>{player.country}</p>
+                      <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 500 }}>{player.country}</p>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <p style={{ color: loading ? 'rgba(255,255,255,0.2)' : todayPt > 0 ? '#00FF87' : '#fff', fontSize: '16px', fontWeight: 900, lineHeight: 1 }}>{loading ? '—' : todayPt}</p>
-                      <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>today · {totalPt} total</p>
+                      <p style={{ color: loading ? 'rgba(255,255,255,0.7)' : todayPt > 0 ? '#00FF87' : '#fff', fontSize: '16px', fontWeight: 900, lineHeight: 1 }}>{loading ? '—' : todayPt}</p>
+                      <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>today · {totalPt} total</p>
                     </div>
                   </div>
                 )
@@ -161,7 +161,7 @@ export default function DashboardHomePage() {
                   <span style={{ color: '#00FF87', fontSize: '18px', fontWeight: 900 }}>{loading ? '—' : todayPts}</span>
                 </div>
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total</span>
+                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total</span>
                   <span style={{ color: '#fff', fontSize: '18px', fontWeight: 900 }}>{loading ? '—' : totalPts}</span>
                 </div>
               </div>
@@ -170,7 +170,7 @@ export default function DashboardHomePage() {
         </div>
 
         <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '22px' }}>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '3px' }}>Today&apos;s Matches</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '3px' }}>Today&apos;s Matches</p>
           <p style={{ color: '#fff', fontSize: '15px', fontWeight: 800, marginBottom: '18px' }}>
             {loading ? '—' : todayFixtures.length === 0 ? 'No matches today' : `${todayFixtures.length} fixture${todayFixtures.length !== 1 ? 's' : ''}`}
           </p>
@@ -179,7 +179,7 @@ export default function DashboardHomePage() {
               {[1, 2, 3].map(i => <div key={i} style={{ height: '52px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)' }} />)}
             </div>
           ) : todayFixtures.length === 0 ? (
-            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '13px', textAlign: 'center', paddingTop: '30px' }}>Check back on match days</p>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textAlign: 'center', paddingTop: '30px' }}>Check back on match days</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {todayFixtures.map((fixture) => {
@@ -191,7 +191,7 @@ export default function DashboardHomePage() {
                 return (
                   <div key={fixture.fixtureId} style={{ padding: '10px 12px', borderRadius: '10px', background: isLiveNow ? 'rgba(0,255,135,0.04)' : 'rgba(255,255,255,0.03)', border: `1px solid ${isLiveNow ? 'rgba(0,255,135,0.15)' : 'rgba(255,255,255,0.05)'}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>{fixture.round}</span>
+                      <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>{fixture.round}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         {isLiveNow && min != null && <span style={{ color: '#00FF87', fontSize: '9px', fontWeight: 700 }}>{min}&apos;</span>}
                         <MatchBadge status={isLiveNow ? 'live' : fixture.status} />
@@ -199,7 +199,7 @@ export default function DashboardHomePage() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700 }}>{fixture.homeTeam}</span>
-                      <span style={{ color: isLiveNow ? '#00FF87' : 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 900, padding: '0 10px' }}>
+                      <span style={{ color: isLiveNow ? '#00FF87' : 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 900, padding: '0 10px' }}>
                         {h !== null && a !== null ? `${h} – ${a}` : 'vs'}
                       </span>
                       <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700, textAlign: 'right' }}>{fixture.awayTeam}</span>

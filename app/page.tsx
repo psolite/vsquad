@@ -72,14 +72,14 @@ export default function LandingPage() {
         <div className="w-full">
           <div className="w-full flex items-center gap-4" style={{ marginBottom: '0.75rem' }}>
             <div className="flex-1 h-px bg-white/20" />
-            <span className="text-white/60 text-[10px] uppercase font-bold" style={{ letterSpacing: '0.2em' }}>Tournament</span>
+            <span className="text-white/70 text-[10px] uppercase font-bold" style={{ letterSpacing: '0.2em' }}>Tournament</span>
             <div className="flex-1 h-px bg-white/20" />
           </div>
           <div className="w-full grid grid-cols-3">
             {[{ value: '48', label: 'Nations' }, { value: '104', label: 'Matches' }, { value: '5', label: 'Your Squad' }].map(({ value, label }, i) => (
               <div key={i} className={`flex flex-col items-center ${i > 0 ? 'border-l border-white/20' : ''}`} style={{ gap: '0.25rem', padding: '0.25rem 0' }}>
                 <span className="font-black text-white leading-none" style={{ fontSize: 'clamp(26px, 5vw, 40px)' }}>{value}</span>
-                <span className="text-white/60 text-[10px] font-medium uppercase" style={{ letterSpacing: '0.2em' }}>{label}</span>
+                <span className="text-white/70 text-[10px] font-medium uppercase" style={{ letterSpacing: '0.2em' }}>{label}</span>
               </div>
             ))}
           </div>
@@ -87,8 +87,8 @@ export default function LandingPage() {
       </div>
 
       <div className="absolute bottom-6 left-0 right-0 flex justify-center items-center gap-2 pointer-events-none z-10">
-        <span className="text-white/40 text-[10px] uppercase tracking-widest font-medium">Powered by</span>
-        <span className="text-white/50 text-[11px] font-black uppercase tracking-widest">TXODDS</span>
+        <span className="text-white/70 text-[10px] uppercase tracking-widest font-medium">Powered by</span>
+        <span className="text-white/70 text-[11px] font-black uppercase tracking-widest">TXODDS</span>
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(4,8,9,0.6), transparent)' }} />

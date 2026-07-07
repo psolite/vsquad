@@ -54,7 +54,7 @@ function LiveScoresWidget() {
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', paddingLeft: '4px' }}>
           <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF87', boxShadow: '0 0 6px #00FF87', flexShrink: 0 }} />
-          <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em' }}>Live Now</span>
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em' }}>Live Now</span>
           <span style={{ marginLeft: 'auto', background: 'rgba(0,255,135,0.12)', color: '#00FF87', fontSize: '9px', fontWeight: 900, padding: '1px 6px', borderRadius: '6px' }}>{liveFixtures.length}</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -85,7 +85,7 @@ function LiveScoresWidget() {
             )
           })}
           {liveFixtures.length > 3 && (
-            <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: '9px', textAlign: 'center', margin: 0 }}>+{liveFixtures.length - 3} more</p>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', textAlign: 'center', margin: 0 }}>+{liveFixtures.length - 3} more</p>
           )}
         </div>
       </div>
@@ -117,22 +117,22 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
         </Link>
         <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF87', boxShadow: '0 0 6px #00FF87' }} />
-          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em' }}>FIFA World Cup 2026</span>
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em' }}>FIFA World Cup 2026</span>
         </div>
       </div>
 
       {/* Nav */}
       <div style={{ flex: 1, padding: '16px 12px', overflowY: 'auto', minHeight: 0 }}>
-        <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '8px', paddingLeft: '8px' }}>Navigation</p>
+        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '8px', paddingLeft: '8px' }}>Navigation</p>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
           {NAV_ITEMS.map(({ href, label, Icon }) => {
             const active = pathname === href
             return (
               <Link key={href} href={href} onClick={onNavigate}
-                style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: active ? '#00FF87' : 'rgba(255,255,255,0.42)', background: active ? 'rgba(0,255,135,0.08)' : 'transparent', border: `1px solid ${active ? 'rgba(0,255,135,0.15)' : 'transparent'}`, fontWeight: active ? 800 : 500, fontSize: '13px', letterSpacing: '0.01em', transition: 'all 0.15s', position: 'relative' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: active ? '#00FF87' : 'rgba(255,255,255,0.7)', background: active ? 'rgba(0,255,135,0.08)' : 'transparent', border: `1px solid ${active ? 'rgba(0,255,135,0.15)' : 'transparent'}`, fontWeight: active ? 800 : 500, fontSize: '13px', letterSpacing: '0.01em', transition: 'all 0.15s', position: 'relative' }}
                 onMouseEnter={e => { if (!active) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' } }}
-                onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'rgba(255,255,255,0.42)'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent' } }}
+                onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent' } }}
               >
                 {active && <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: '3px', height: '60%', borderRadius: '0 3px 3px 0', background: '#00FF87' }} />}
                 <Icon />
@@ -143,11 +143,11 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
         </nav>
 
         <div style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
-          <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '12px', paddingLeft: '8px' }}>Tournament</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '12px', paddingLeft: '8px' }}>Tournament</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '8px' }}>
             {[{ label: 'Nations', value: '48' }, { label: 'Matches', value: '104' }, { label: 'Groups', value: '12' }].map(({ label, value }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 500 }}>{label}</span>
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 500 }}>{label}</span>
                 <span style={{ color: '#fff', fontSize: '12px', fontWeight: 800 }}>{value}</span>
               </div>
             ))}
@@ -166,7 +166,7 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF87" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
             <div style={{ minWidth: 0 }}>
-              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '1px' }}>Connected</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '1px' }}>Connected</p>
               <p style={{ color: '#fff', fontSize: '11px', fontWeight: 700, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shortKey(publicKey.toBase58())}</p>
             </div>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF87', boxShadow: '0 0 5px #00FF87', flexShrink: 0 }} />
