@@ -342,14 +342,12 @@ export function FixturesPanel() {
   const total    = todayAll.length + data.finished.length + data.upcoming.length
   if (total === 0) return <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>No matches found</p>
 
-  const grid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
       {todayAll.length > 0 && (
         <>
           <SectionHeader label="Today" count={todayAll.length} color="#facc15" />
-          <div style={grid}>
+          <div className="match-grid" style={{ gap: '8px' }}>
             {data.live.map((f) => <MatchCard key={f.fixtureId} f={f} liveOverride={liveMap[f.fixtureId]} />)}
             {(data.today ?? []).map((f) => <MatchCard key={f.fixtureId} f={f} liveOverride={liveMap[f.fixtureId]} />)}
           </div>
@@ -358,13 +356,13 @@ export function FixturesPanel() {
       {data.upcoming.length > 0 && (
         <>
           <SectionHeader label="Upcoming" count={data.upcoming.length} color="#60a5fa" />
-          <div style={grid}>{data.upcoming.map((f) => <MatchCard key={f.fixtureId} f={f} />)}</div>
+          <div className="match-grid" style={{ gap: '8px' }}>{data.upcoming.map((f) => <MatchCard key={f.fixtureId} f={f} />)}</div>
         </>
       )}
       {data.finished.length > 0 && (
         <>
           <SectionHeader label="Results" count={data.finished.length} color="rgba(255,255,255,0.4)" />
-          <div style={grid}>{data.finished.map((f) => <MatchCard key={f.fixtureId} f={f} />)}</div>
+          <div className="match-grid" style={{ gap: '8px' }}>{data.finished.map((f) => <MatchCard key={f.fixtureId} f={f} />)}</div>
         </>
       )}
     </div>
@@ -455,7 +453,7 @@ export default function TournamentPage() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0, background: '#0a0e1a' }}>
 
-      <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0, background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="builder-header-row" style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0, background: 'rgba(255,255,255,0.02)' }}>
         <div>
           <h2 style={{ color: '#fff', fontWeight: 900, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.12em', margin: 0 }}>VSquad Hub</h2>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '2px', letterSpacing: '0.05em' }}>FIFA World Cup 2026 · Live scores &amp; leaderboard</p>
@@ -607,7 +605,7 @@ export default function TournamentPage() {
                   onFocus={e => (e.currentTarget.style.borderColor = 'rgba(0,255,135,0.4)')}
                   onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')} />
               </InputRow>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="grid-2col-tight" style={{ gap: '12px' }}>
                 <InputRow label="Start Date *">
                   <input type="date" value={form.startDate} onChange={e => field('startDate', e.target.value)} style={{ ...inputStyle, colorScheme: 'dark' }}
                     onFocus={e => (e.currentTarget.style.borderColor = 'rgba(0,255,135,0.4)')}
@@ -619,7 +617,7 @@ export default function TournamentPage() {
                     onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')} />
                 </InputRow>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="grid-2col-tight" style={{ gap: '12px' }}>
                 <InputRow label="Max Participants">
                   <input type="number" min={2} max={100000} value={form.maxParticipants} onChange={e => field('maxParticipants', Number(e.target.value))} style={inputStyle}
                     onFocus={e => (e.currentTarget.style.borderColor = 'rgba(0,255,135,0.4)')}

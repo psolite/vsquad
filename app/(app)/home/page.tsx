@@ -82,7 +82,7 @@ export default function DashboardHomePage() {
   const liveCount = (matches?.live ?? []).length + Object.values(liveMap).filter(s => s.matchStatus === 'live').length
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto', padding: '28px 28px 40px', background: '#0a0e1a' }}>
+    <div style={{ height: '100%', overflowY: 'auto', padding: '28px 28px 40px', background: '#0a0e1a' }} className="dash-page">
 
       <div style={{ marginBottom: '22px' }}>
         <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '6px' }}>{today}</p>
@@ -92,7 +92,7 @@ export default function DashboardHomePage() {
         </h1>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '18px' }}>
+      <div className="grid-2col" style={{ gap: '14px', marginBottom: '18px' }}>
         <div style={{ background: 'linear-gradient(135deg, rgba(0,255,135,0.1) 0%, rgba(0,255,135,0.04) 100%)', border: '1px solid rgba(0,255,135,0.25)', borderRadius: '18px', padding: '26px 28px' }}>
           <p style={{ color: 'rgba(0,255,135,0.6)', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: '12px' }}>Today&apos;s Points</p>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', lineHeight: 1 }}>
@@ -112,7 +112,7 @@ export default function DashboardHomePage() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '18px' }}>
+      <div className="stats-row" style={{ gap: '12px', marginBottom: '18px' }}>
         {[{ label: 'Squad', value: `${squadFilled}/5` }, { label: 'Live', value: loading ? '—' : String(liveCount > 0 ? liveCount : (matches?.live?.length ?? 0)) }, { label: "Today's Matches", value: loading ? '—' : String(matches?.today?.length ?? 0) }, { label: 'Finished', value: loading ? '—' : String(matches?.finished?.length ?? 0) }].map(({ label, value }) => (
           <div key={label} style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px 16px' }}>
             <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: '5px' }}>{label}</p>
@@ -121,7 +121,7 @@ export default function DashboardHomePage() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
+      <div className="grid-2col" style={{ gap: '18px' }}>
         <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '22px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
             <div>

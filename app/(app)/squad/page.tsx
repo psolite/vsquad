@@ -62,7 +62,7 @@ export default function SquadBuilderPage() {
     <div className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0, background: '#0a0e1a' }}>
 
       <div
-        className="flex items-center justify-between"
+        className="builder-header-row"
         style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0, background: 'rgba(255,255,255,0.02)' }}
       >
         <div>
@@ -112,18 +112,15 @@ export default function SquadBuilderPage() {
         )}
       </div>
 
-      <div className="flex flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+      <div className="split-view">
 
-        <div
-          className="flex flex-col"
-          style={{ width: '42%', borderRight: '1px solid rgba(255,255,255,0.07)', padding: '16px', minHeight: 0 }}
-        >
+        <div className="split-pitch-col">
           <div className="flex-1 min-h-0">
             <Pitch squad={squad} selectedSlot={selectedSlot} onSlotClick={handleSlotClick} />
           </div>
         </div>
 
-        <div className="flex flex-col flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+        <div className="split-list-col">
 
           <div style={{ padding: '14px 20px 0', flexShrink: 0 }}>
 

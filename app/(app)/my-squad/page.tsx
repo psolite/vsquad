@@ -77,12 +77,12 @@ export default function MySquadPage() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0, background: '#0a0e1a' }}>
 
-      <div style={{ padding: '12px 24px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="builder-header-row" style={{ padding: '12px 24px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
         <div>
           <h2 style={{ color: '#fff', fontWeight: 900, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.12em', margin: 0 }}>My Squad</h2>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '2px', letterSpacing: '0.05em' }}>World Cup 2026 · 5-a-side</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
           {saveError && <span style={{ color: '#f87171', fontSize: '11px' }}>{saveError}</span>}
           {saving    && <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>Saving…</span>}
           {saved && !saving && !saveError && <span style={{ color: 'rgba(0,255,135,0.6)', fontSize: '11px' }}>Saved</span>}
@@ -95,15 +95,15 @@ export default function MySquadPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+      <div className="split-view">
 
-        <div className="flex flex-col" style={{ width: '42%', borderRight: '1px solid rgba(255,255,255,0.07)', padding: '16px', minHeight: 0 }}>
+        <div className="split-pitch-col">
           <div className="flex-1 min-h-0">
             <Pitch squad={squad} selectedSlot={null} onSlotClick={noop} />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto" style={{ minHeight: 0, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <div className="split-list-col overflow-y-auto" style={{ padding: '20px 24px', gap: '18px' }}>
 
           <div>
             <label style={{ display: 'block', marginBottom: '8px', color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
@@ -156,7 +156,7 @@ export default function MySquadPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <div className="grid-2col-tight" style={{ gap: '8px' }}>
             {[{ value: totalGoals, label: 'Total Goals' }, { value: totalCaps, label: 'Total Caps' }].map(({ value, label }) => (
               <div key={label} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
                 <div style={{ color: '#00FF87', fontSize: '26px', fontWeight: 900, lineHeight: 1 }}>{value}</div>

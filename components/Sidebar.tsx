@@ -93,18 +93,23 @@ function LiveScoresWidget() {
   )
 }
 
-export default function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean
+  onNavigate?: () => void
+}
+
+export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
   const pathname = usePathname()
   const { publicKey, connected } = useWallet()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
   return (
-    <aside style={{ width: '220px', flexShrink: 0, height: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, #080c18 0%, #070a14 100%)', borderRight: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 10 }}>
+    <aside className={`app-sidebar ${mobileOpen ? 'app-sidebar--open' : ''}`} style={{ width: '220px', flexShrink: 0, height: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, #080c18 0%, #070a14 100%)', borderRight: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 10 }}>
 
       {/* Logo */}
       <div style={{ padding: '20px 18px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+        <Link href="/" onClick={onNavigate} style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
           <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: 'rgba(0,255,135,0.1)', border: '1px solid rgba(0,255,135,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', lineHeight: 1, flexShrink: 0 }}>⚽</div>
           <span style={{ fontWeight: 900, fontSize: '15px', textTransform: 'uppercase', letterSpacing: '0.14em', lineHeight: 1 }}>
             <span style={{ color: '#fff' }}>V</span><span style={{ color: '#00FF87' }}>SQUAD</span>
@@ -124,7 +129,7 @@ export default function Sidebar() {
           {NAV_ITEMS.map(({ href, label, Icon }) => {
             const active = pathname === href
             return (
-              <Link key={href} href={href}
+              <Link key={href} href={href} onClick={onNavigate}
                 style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: active ? '#00FF87' : 'rgba(255,255,255,0.42)', background: active ? 'rgba(0,255,135,0.08)' : 'transparent', border: `1px solid ${active ? 'rgba(0,255,135,0.15)' : 'transparent'}`, fontWeight: active ? 800 : 500, fontSize: '13px', letterSpacing: '0.01em', transition: 'all 0.15s', position: 'relative' }}
                 onMouseEnter={e => { if (!active) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' } }}
                 onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'rgba(255,255,255,0.42)'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent' } }}

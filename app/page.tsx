@@ -37,14 +37,14 @@ export default function LandingPage() {
           <div className="h-px w-10 bg-[#00FF87]/40" />
         </div>
 
-        <h1 className="font-black uppercase leading-none select-none" style={{ fontSize: 'clamp(72px, 17vw, 148px)', letterSpacing: '-0.03em', margin: 0 }}>
+        <h1 className="font-black uppercase leading-none select-none" style={{ fontSize: 'clamp(44px, 17vw, 148px)', letterSpacing: '-0.03em', margin: 0 }}>
           <span className="text-white">V</span>
           <span style={{ color: '#00FF87', textShadow: '0 0 100px rgba(0,255,135,0.4)' }}>SQUAD</span>
         </h1>
 
         <div className="flex flex-col items-center" style={{ gap: '0.5rem' }}>
           <p className="text-white/70 font-semibold uppercase" style={{ fontSize: 'clamp(12px, 2vw, 15px)', letterSpacing: '0.22em' }}>5-a-side Fantasy Football</p>
-          <div className="flex flex-row items-center flex-nowrap" style={{ gap: '0.6rem' }}>
+          <div className="flex flex-row items-center flex-wrap justify-center" style={{ gap: '0.6rem' }}>
             {[
               { label: '1 GK',  bg: 'rgba(234,179,8,0.2)',  color: '#facc15', border: 'rgba(234,179,8,0.3)' },
               { label: '·',     bg: 'transparent',           color: 'rgba(255,255,255,0.7)', border: 'transparent' },
