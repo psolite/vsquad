@@ -2,7 +2,6 @@ import axios from 'axios'
 import { EventEmitter } from 'events'
 import { cfg } from './config'
 
-export { authenticate } from './activate'
 export { cfg }
 
 // ── Types ─────────────────────────────────────────────────────────────────────

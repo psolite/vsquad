@@ -28,12 +28,10 @@ export default function SquadBuilderPage() {
   const [posFilter, setPosFilter] = useState<Position | 'ALL'>('ALL')
   const [modalPlayer, setModalPlayer] = useState<Player | null>(null)
 
-  if (!connected) { router.push('/'); return null }
-
   const activePosition: Position | null = selectedSlot ? slotPosition[selectedSlot] : null
-  const usedIds = new Set(Object.values(squad).filter(Boolean).map((p) => p!.id))
 
   const filtered = useMemo(() => {
+    const usedIds = new Set(Object.values(squad).filter(Boolean).map((p) => p!.id))
     const pos = posFilter !== 'ALL' ? posFilter : activePosition
     return players.filter((p) => {
       if (usedIds.has(p.id)) return false
@@ -43,8 +41,9 @@ export default function SquadBuilderPage() {
           !p.country.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, posFilter, activePosition, usedIds])
+  }, [search, posFilter, activePosition, squad])
+
+  if (!connected) { router.push('/'); return null }
 
   function handleSlotClick(slot: SlotId) {
     setSelectedSlot(selectedSlot === slot ? null : slot)
@@ -64,7 +63,7 @@ export default function SquadBuilderPage() {
     <div className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0, background: '#0a0e1a' }}>
 
       <div
-        className="flex items-center justify-between"
+        className="builder-header-row"
         style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0, background: 'rgba(255,255,255,0.02)' }}
       >
         <div>
@@ -75,7 +74,7 @@ export default function SquadBuilderPage() {
             ? <p style={{ color: '#00FF87', fontSize: '11px', fontWeight: 700, marginTop: '2px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Selecting {slotPosition[selectedSlot]} — pick from the list →
               </p>
-            : <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '2px', letterSpacing: '0.05em' }}>
+            : <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', marginTop: '2px', letterSpacing: '0.05em' }}>
                 World Cup 2026 · 5-a-side · Tap a slot on the pitch
               </p>
           }
@@ -95,7 +94,7 @@ export default function SquadBuilderPage() {
               />
             ))}
           </div>
-          <span style={{ color: complete ? '#00FF87' : 'rgba(255,255,255,0.35)', fontSize: '12px', fontWeight: 900, marginLeft: '4px' }}>
+          <span style={{ color: complete ? '#00FF87' : 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 900, marginLeft: '4px' }}>
             {count}/5
           </span>
         </div>
@@ -114,24 +113,21 @@ export default function SquadBuilderPage() {
         )}
       </div>
 
-      <div className="flex flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+      <div className="split-view">
 
-        <div
-          className="flex flex-col"
-          style={{ width: '42%', borderRight: '1px solid rgba(255,255,255,0.07)', padding: '16px', minHeight: 0 }}
-        >
+        <div className="split-pitch-col">
           <div className="flex-1 min-h-0">
             <Pitch squad={squad} selectedSlot={selectedSlot} onSlotClick={handleSlotClick} />
           </div>
         </div>
 
-        <div className="flex flex-col flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+        <div className="split-list-col">
 
-          <div style={{ padding: '14px 20px 0', flexShrink: 0 }}>
+          <div className="builder-list-header" style={{ padding: '14px 20px 0', flexShrink: 0 }}>
 
             <div style={{ position: 'relative', marginBottom: '10px' }}>
               <svg
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '15px', height: '15px', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }}
+                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '15px', height: '15px', color: 'rgba(255,255,255,0.7)', pointerEvents: 'none' }}
                 fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
               >
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -152,24 +148,24 @@ export default function SquadBuilderPage() {
                 <button
                   key={pos}
                   onClick={() => setPosFilter(pos)}
-                  style={{ flex: 1, padding: '7px 0', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.08em', background: posFilter === pos ? '#00FF87' : 'rgba(255,255,255,0.06)', color: posFilter === pos ? '#0a0e1a' : 'rgba(255,255,255,0.4)', transition: 'all 0.15s' }}
+                  style={{ flex: 1, padding: '7px 0', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.08em', background: posFilter === pos ? '#00FF87' : 'rgba(255,255,255,0.06)', color: posFilter === pos ? '#0a0e1a' : 'rgba(255,255,255,0.7)', transition: 'all 0.15s' }}
                 >
                   {pos}
                 </button>
               ))}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.7)' }}>
               <span style={{ flex: 1, paddingLeft: '4px' }}>Player</span>
               <span style={{ width: '48px', textAlign: 'center' }}>Pos</span>
               <span style={{ width: '32px' }} />
             </div>
           </div>
 
-          <div className="overflow-y-auto flex-1" style={{ minHeight: 0 }}>
+          <div className="builder-list-scroll">
             {filtered.length === 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '120px' }}>
-                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '13px' }}>No players found</p>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>No players found</p>
               </div>
             ) : filtered.map((player, idx) => {
               const badge = posBadge[player.position]
@@ -185,14 +181,14 @@ export default function SquadBuilderPage() {
                   <FlagImg country={player.country} size={22} shape="rect" />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ color: '#fff', fontWeight: 700, fontSize: '13px', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.name}</p>
-                    <p style={{ color: 'rgba(255,255,255,0.32)', fontSize: '11px', margin: '1px 0 0' }}>{player.country}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', margin: '1px 0 0' }}>{player.country}</p>
                   </div>
                   <span style={{ background: badge.bg, color: badge.color, padding: '2px 8px', borderRadius: '5px', fontSize: '10px', fontWeight: 900, letterSpacing: '0.06em', textTransform: 'uppercase' as const, flexShrink: 0, width: '42px', textAlign: 'center' as const }}>
                     {player.position}
                   </span>
                   <button
                     onClick={(e) => { e.stopPropagation(); if (canQuickAdd) handleAddPlayer(player); else setModalPlayer(player) }}
-                    style={{ width: '26px', height: '26px', borderRadius: '50%', border: 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 900, lineHeight: 1, background: canQuickAdd ? '#00FF87' : 'rgba(255,255,255,0.08)', color: canQuickAdd ? '#0a0e1a' : 'rgba(255,255,255,0.45)', transition: 'all 0.15s' }}
+                    style={{ width: '26px', height: '26px', borderRadius: '50%', border: 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 900, lineHeight: 1, background: canQuickAdd ? '#00FF87' : 'rgba(255,255,255,0.08)', color: canQuickAdd ? '#0a0e1a' : 'rgba(255,255,255,0.7)', transition: 'all 0.15s' }}
                   >
                     +
                   </button>

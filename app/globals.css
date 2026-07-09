@@ -9,12 +9,52 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Landing page background — set on body so it's guaranteed to start at the
+   true top of the page, with no dependency on any component's positioning. */
+body:has(.landing-page) {
+  background-image: url(/BackgroundImage.png);
+  background-size: 100% 100%;
+  background-position: center top;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
 html, body { height: 100%; }
+
+/* ── Custom scrollbars ─────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.45) rgba(255,255,255,0.05);
+}
+*::-webkit-scrollbar { width: 11px; height: 11px; }
+*::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+*::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.45); border-radius: 8px; border: 2px solid #0a0e1a; background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background: #00FF87; background-clip: padding-box; }
+*::-webkit-scrollbar-corner { background: transparent; }
 
 /* ── Wallet adapter button ─────────────────────────── */
 .wallet-adapter-button { background: #00FF87 !important; color: #0a0e1a !important; font-weight: 800 !important; font-size: 14px !important; border-radius: 10px !important; padding: 12px 24px !important; height: auto !important; transition: background 0.15s ease !important; }
 .wallet-adapter-button:hover:not([disabled]) { background: #00e07a !important; }
 .wallet-adapter-button-start-icon { display: none !important; }
+.wallet-adapter-dropdown { z-index: 1000 !important; }
+.wallet-adapter-dropdown-list { z-index: 1000 !important; }
+
+/* Sidebar's wallet button sits at the bottom of the viewport, inside a
+   container with overflow:hidden — position:absolute keeps the dropdown
+   trapped inside that clipping box no matter what. position:fixed escapes
+   it entirely and renders as a true overlay above everything. */
+.sidebar-wallet-dropdown .wallet-adapter-dropdown { display: block !important; width: 100%; }
+.sidebar-wallet-dropdown .wallet-adapter-dropdown-list {
+  position: fixed !important;
+  z-index: 1000 !important;
+  left: 14px !important;
+  width: 192px !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 74px !important;
+  margin: 0 !important;
+}
+.sidebar-wallet-dropdown .wallet-adapter-dropdown-list-active { transform: none !important; }
 .wallet-adapter-modal { background: rgba(0,0,0,0.75) !important; backdrop-filter: blur(8px) !important; }
 .wallet-adapter-modal-wrapper { background: #0f1923 !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 20px !important; padding: 32px !important; box-shadow: 0 24px 64px rgba(0,0,0,0.6) !important; max-width: 380px !important; }
 .wallet-adapter-modal-title { color: #ffffff !important; font-size: 18px !important; font-weight: 800 !important; text-align: center !important; margin-bottom: 24px !important; }
@@ -26,27 +66,103 @@ html, body { height: 100%; }
 .wallet-adapter-modal-list .wallet-adapter-button-start-icon img { width: 32px !important; height: 32px !important; border-radius: 8px !important; }
 .wallet-adapter-modal-button-close { background: rgba(255,255,255,0.07) !important; border-radius: 50% !important; top: 16px !important; right: 16px !important; width: 36px !important; height: 36px !important; }
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ── Responsive app shell ──────────────────────────── */
+.app-topbar { display: none; }
+.app-drawer-backdrop { display: none; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@media (max-width: 900px) {
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 52px;
+    flex-shrink: 0;
+    padding: 0 14px;
+    background: #080c18;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+    z-index: 30;
   }
+  .app-shell { flex-direction: column !important; }
+  .app-main { min-height: 0; }
+
+  .app-sidebar {
+    position: fixed !important;
+    top: 0; left: 0; bottom: 0;
+    height: 100vh !important;
+    width: 250px !important;
+    max-width: 82vw;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 100 !important;
+  }
+  .app-sidebar.app-sidebar--open { transform: translateX(0); }
+
+  .app-drawer-backdrop.app-drawer-backdrop--open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(2px);
+    z-index: 90;
+  }
+
+  /* iOS Safari auto-zooms into any focused input/select/textarea with a font-size under 16px */
+  input, select, textarea { font-size: 16px !important; }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── Responsive layout helpers ─────────────────────── */
+.split-view { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.split-pitch-col { width: 42%; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.07); padding: 16px; min-height: 0; display: flex; flex-direction: column; }
+.split-list-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+
+/* Self-scrolling variant: the column itself is the scroll container (no separate inner list) */
+.split-list-col-scroll { flex: 1; display: flex; flex-direction: column; overflow-y: auto; min-height: 0; }
+
+/* Inner scrollable list inside a split-list-col that also has a fixed header above it */
+.builder-list-scroll { flex: 1; overflow-y: auto; min-height: 0; }
+
+/* Search box / position filters / column titles: scrolls into view, then sticks in place */
+.builder-list-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #0a0e1a;
 }
+
+@media (max-width: 860px) {
+  .split-view { flex-direction: column; overflow-y: auto; }
+  .split-pitch-col { width: 100%; height: 380px; flex: none; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .split-list-col { flex: none; height: auto; overflow: visible; }
+  .split-list-col-scroll { flex: none; height: auto; overflow: visible; }
+  .builder-list-scroll { flex: none; height: auto; overflow: visible; min-height: 0; }
+}
+
+.grid-2col { display: grid; grid-template-columns: 1fr 1fr; }
+@media (max-width: 700px) {
+  .grid-2col { grid-template-columns: 1fr; }
+}
+
+.grid-2col-tight { display: grid; grid-template-columns: 1fr 1fr; }
+@media (max-width: 480px) {
+  .grid-2col-tight { grid-template-columns: 1fr; }
+}
+
+.stats-row { display: flex; flex-wrap: nowrap; }
+@media (max-width: 560px) {
+  .stats-row { flex-wrap: wrap; }
+  .stats-row > * { flex: 1 1 calc(50% - 6px); min-width: 0; }
+}
+
+@media (max-width: 640px) {
+  .dash-page { padding: 16px 16px 32px !important; }
+}
+
+.match-grid { display: grid; grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 560px) {
+  .match-grid { grid-template-columns: 1fr; }
+}
+
+.page-header-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.builder-header-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }

@@ -3,7 +3,7 @@ export async function register() {
 
   const { initDb } = await import('./lib/db')
   const { refreshSquadCache, startLiveScoring } = await import('./lib/services/liveScoring')
-  const { authenticate, probeToken, startScoreStream } = await import('./lib/services/txodds/index')
+  const { probeToken, startScoreStream } = await import('./lib/services/txodds/index')
 
   try {
     await initDb()
@@ -32,6 +32,7 @@ export async function register() {
     )
   } else if (process.env.SERVER_WALLET_SECRET_KEY) {
     try {
+      const { authenticate } = await import('./lib/services/txodds/activate')
       const { apiToken } = await authenticate()
       console.log('[txodds] token acquired — add to .env.local: TXODDS_API_TOKEN=' + apiToken)
       await initTxodds(apiToken)

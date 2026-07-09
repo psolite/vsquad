@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { upsertSquad } from '@/lib/db'
 import type { Player } from '@/lib/db'
-import { refreshSquadCache } from '@/lib/services/liveScoring'
 
 interface SquadBody {
   walletAddress: string
@@ -18,8 +17,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'walletAddress and all 5 squad slots are required' }, { status: 400 })
   }
 
-  const saved = await upsertSquad({ walletAddress, squadName, squad, locked })
-  // Refresh in-memory squad cache so leaderboard stays accurate
-  refreshSquadCache().catch(() => {})
-  return NextResponse.json(saved, { status: 201 })
+  try {
+    const saved = await upsertSquad({ walletAddress, squadName, squad, locked })
+    // Refresh in-memory squad cache so leaderboard stays accurate. Loaded
+    // lazily — this pulls in the whole TxOdds/Solana toolchain, which has no
+    // business being a hard dependency of "save a squad to Postgres".
+    import('@/lib/services/liveScoring').then((m) => m.refreshSquadCache()).catch(() => {})
+    return NextResponse.json(saved, { status: 201 })
+  } catch (err: unknown) {
+    console.error('[squads] failed to save squad for wallet', walletAddress, err)
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to save squad' }, { status: 500 })
+  }
 }
