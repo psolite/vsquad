@@ -5,6 +5,7 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import type { Player, Position, SlotId } from '@/types'
 import { useSquadStore, filledCount, isComplete } from '@/store/squadStore'
 import players from '@/data/players'
+import { activeCountries } from '@/data/active'
 import FlagImg from '@/components/FlagImg'
 import Pitch from '@/components/Pitch'
 import PlayerModal from '@/components/PlayerModal'
@@ -36,6 +37,7 @@ export default function SquadBuilderPage() {
     const pos = posFilter !== 'ALL' ? posFilter : activePosition
     return players.filter((p) => {
       if (usedIds.has(p.id)) return false
+      if (activeCountries.size > 0 && !activeCountries.has(p.country)) return false
       if (pos && p.position !== pos) return false
       if (search && !p.name.toLowerCase().includes(search.toLowerCase()) &&
           !p.country.toLowerCase().includes(search.toLowerCase())) return false
