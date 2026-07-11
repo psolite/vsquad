@@ -1,11 +1,12 @@
 'use client'
 import Link from 'next/link'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { scoresApi } from '@/lib/api/scoresApi'
-import type { MatchLiveScore, MatchesResponse, Fixture } from '@/lib/api/scoresApi'
+import type { MatchLiveScore } from '@/lib/api/scoresApi'
 
 function HomeIcon()     { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> }
 function PitchIcon()    { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><circle cx="12" cy="12" r="3.5"/><line x1="2" y1="12" x2="5.5" y2="12"/><line x1="18.5" y1="12" x2="22" y2="12"/></svg> }
@@ -30,14 +31,19 @@ const getServerSnapshot = () => false
 // ── Live Scores Widget ────────────────────────────────────────────────────────
 
 function LiveScoresWidget() {
-  const [fixtures, setFixtures] = useState<Fixture[]>([])
-  const [liveMap,  setLiveMap]  = useState<Record<string, MatchLiveScore>>({})
+  const [liveMap, setLiveMap] = useState<Record<string, MatchLiveScore>>({})
+
+  const { data, error } = useQuery({
+    queryKey: ['matches'],
+    queryFn: scoresApi.matches,
+  })
+  const fixtures = useMemo(() => [...(data?.live ?? []), ...(data?.today ?? [])], [data])
 
   useEffect(() => {
-    scoresApi.matches().then((d: MatchesResponse) => {
-      setFixtures([...(d.live ?? []), ...(d.today ?? [])])
-    }).catch(() => {})
+    if (error) console.error('[sidebar] failed to load matches', error)
+  }, [error])
 
+  useEffect(() => {
     return scoresApi.subscribeToLive({
       onMatchScores: (scores) => {
         setLiveMap((prev) => {

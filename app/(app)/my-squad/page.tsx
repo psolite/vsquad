@@ -1,12 +1,14 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useSquadStore, isComplete } from "@/store/squadStore";
 import type { SlotId } from "@/types";
 import Pitch from "@/components/Pitch";
 import FlagImg from "@/components/FlagImg";
+import Spinner, { LoadingState } from "@/components/Spinner";
 import { squadApi } from "@/lib/api/squadApi";
 
 const posBg: Record<string, string> = {
@@ -36,38 +38,57 @@ export default function MySquadPage() {
   const wallet = publicKey?.toBase58() ?? "";
   const complete = isComplete(squad);
 
-  const [saving, setSaving] = useState(() => complete && !!wallet);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [showPickModal, setShowPickModal] = useState(false);
-  const [checkingServer, setCheckingServer] = useState(!complete);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Local store is in-memory only — if it's empty (fresh session, direct nav,
   // or a refresh), pull the saved squad from the server before deciding there
   // isn't one.
-  useEffect(() => {
-    if (complete || !wallet) return;
-    squadApi
-      .get(wallet)
-      .then((record) => loadSquad(record.squad, record.squadName, record.locked))
-      .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : "Failed to load squad";
-        if (message !== "Squad not found") setLoadError(message);
-      })
-      .finally(() => setCheckingServer(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wallet]);
+  const loadQuery = useQuery({
+    queryKey: ["squad", wallet],
+    queryFn: () => squadApi.get(wallet),
+    enabled: !complete && !!wallet,
+    retry: false,
+  });
+  const checkingServer = loadQuery.isLoading;
+  const loadError =
+    loadQuery.isError &&
+    !(loadQuery.error instanceof Error && loadQuery.error.message === "Squad not found")
+      ? loadQuery.error instanceof Error
+        ? loadQuery.error.message
+        : "Failed to load squad"
+      : null;
 
   useEffect(() => {
-    if (!complete || !wallet) return;
-    squadApi
-      .save(wallet, squadName, squad, locked)
-      .then(() => setSaved(true))
-      .catch((err: unknown) =>
-        setSaveError(err instanceof Error ? err.message : "Save failed"),
-      )
-      .finally(() => setSaving(false));
+    if (loadQuery.data) {
+      loadSquad(loadQuery.data.squad, loadQuery.data.squadName, loadQuery.data.locked);
+    }
+  }, [loadQuery.data, loadSquad]);
+
+  useEffect(() => {
+    if (!loadQuery.isError) return;
+    const err = loadQuery.error;
+    if (err instanceof Error && err.message === "Squad not found") return;
+    console.error("[my-squad] failed to load squad", wallet, err);
+  }, [loadQuery.isError, loadQuery.error, wallet]);
+
+  const saveMutation = useMutation({
+    mutationFn: (opts: { locked: boolean }) => squadApi.save(wallet, squadName, squad, opts.locked),
+    onError: (err) => console.error("[my-squad] failed to save squad", wallet, err),
+  });
+  const saving = saveMutation.isPending;
+  const saved = saveMutation.isSuccess;
+  const saveError = saveMutation.isError
+    ? saveMutation.error instanceof Error
+      ? saveMutation.error.message
+      : "Save failed"
+    : null;
+
+  // Squad was just completed this session (not loaded from the server) — persist it once on mount.
+  const autoSaveTriggered = useRef(false);
+  useEffect(() => {
+    if (!complete || !wallet || autoSaveTriggered.current) return;
+    autoSaveTriggered.current = true;
+    saveMutation.mutate({ locked });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -81,9 +102,7 @@ export default function MySquadPage() {
         className="flex-1 flex flex-col items-center justify-center"
         style={{ minHeight: 0, background: "#0a0e1a" }}
       >
-        <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "13px" }}>
-          Loading your squad…
-        </p>
+        <LoadingState label="Loading your squad…" marginTop="0" />
       </div>
     );
   }
@@ -113,16 +132,11 @@ export default function MySquadPage() {
   async function handleLock() {
     if (!wallet) return;
     lockSquad();
-    setSaving(true);
-    setSaveError(null);
     try {
-      await squadApi.save(wallet, squadName, squad, true);
-      setSaved(true);
+      await saveMutation.mutateAsync({ locked: true });
       toast.success("Squad locked in!");
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Save failed");
-    } finally {
-      setSaving(false);
+    } catch {
+      // error already surfaced via saveError / logged in saveMutation's onError
     }
   }
 
@@ -207,7 +221,16 @@ export default function MySquadPage() {
             </span>
           )}
           {saving && (
-            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                color: "rgba(255,255,255,0.7)",
+                fontSize: "11px",
+              }}
+            >
+              <Spinner size={11} />
               Saving…
             </span>
           )}

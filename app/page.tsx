@@ -1,31 +1,43 @@
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useSquadStore } from "@/store/squadStore";
 import { squadApi } from "@/lib/api/squadApi";
 import GoogleLoginButton from "@/components/GoogleLoginButton";
+import Spinner from "@/components/Spinner";
 
 export default function LandingPage() {
   const { connected, publicKey } = useWallet();
   const router = useRouter();
   const { loadSquad } = useSquadStore();
+  const wallet = publicKey?.toBase58() ?? null;
   // Derived, not state: this effect always ends by navigating away, so
   // there's nothing to reset back to false — it's just "are we mid-check".
   const checking = connected && !!publicKey;
 
+  const { data: squadRecord, isSuccess, isError, error } = useQuery({
+    queryKey: ["squad", wallet],
+    queryFn: () => squadApi.get(wallet!),
+    enabled: connected && !!wallet,
+    retry: false,
+  });
+
   useEffect(() => {
-    if (!connected || !publicKey) return;
-    const wallet = publicKey.toBase58();
-    squadApi
-      .get(wallet)
-      .then((record) => {
-        loadSquad(record.squad, record.squadName, record.locked);
-        router.push("/my-squad");
-      })
-      .catch(() => router.push("/squad"));
-  }, [connected, publicKey, router, loadSquad]);
+    if (!isSuccess || !squadRecord) return;
+    loadSquad(squadRecord.squad, squadRecord.squadName, squadRecord.locked);
+    router.push("/my-squad");
+  }, [isSuccess, squadRecord, router, loadSquad]);
+
+  useEffect(() => {
+    if (!isError) return;
+    if (!(error instanceof Error) || error.message !== "Squad not found") {
+      console.error("[landing] failed to load squad for wallet", wallet, error);
+    }
+    router.push("/squad");
+  }, [isError, error, router, wallet]);
 
   return (
     <div
@@ -186,19 +198,21 @@ export default function LandingPage() {
             <GoogleLoginButton />
           </div>
           {checking && (
-            <p
+            <div
+              className="inline-flex items-center justify-center"
               style={{
                 color: "rgba(0,255,135,0.6)",
                 fontSize: "11px",
                 fontWeight: 700,
-                textAlign: "center",
+                gap: "6px",
                 marginTop: "10px",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
               }}
             >
+              <Spinner size={12} />
               Loading your squad…
-            </p>
+            </div>
           )}
         </div>
 

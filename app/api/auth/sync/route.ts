@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const privyUser = await privyClient().getUser(privyUserId)
-    const email = privyUser.email?.address ?? privyUser.google?.email ?? null
+    const email = privyUser.google?.email ?? null
     const user = await upsertUserFromPrivy(privyUserId, email)
     return NextResponse.json(user)
   } catch (err: unknown) {

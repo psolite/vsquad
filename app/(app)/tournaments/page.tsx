@@ -1,14 +1,16 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useSquadStore, isComplete } from '@/store/squadStore'
 import { tournamentApi } from '@/lib/api/tournamentApi'
 import type { Tournament, CreateTournamentInput } from '@/lib/api/tournamentApi'
 import { scoresApi } from '@/lib/api/scoresApi'
-import type { SquadLiveScore, GoalEvent, Fixture, MatchesResponse, MatchLiveScore } from '@/lib/api/scoresApi'
+import type { SquadLiveScore, GoalEvent, Fixture, MatchLiveScore } from '@/lib/api/scoresApi'
 import FlagImg from '@/components/FlagImg'
 import { countryColors } from '@/data/countryColors'
+import Spinner, { LoadingState } from '@/components/Spinner'
 
 const STATUS_STYLE: Record<string, { label: string; bg: string; color: string }> = {
   open:   { label: 'Open',  bg: 'rgba(0,255,135,0.12)',   color: '#00FF87' },
@@ -75,14 +77,21 @@ function GoalToast({ event, onDone }: { event: GoalEvent; onDone: () => void }) 
 }
 
 function LeaderboardPanel({ wallet }: { wallet: string }) {
-  const [rows,    setRows]    = useState<SquadLiveScore[]>([])
-  const [loading, setLoading] = useState(true)
-  const [toast,   setToast]   = useState<GoalEvent | null>(null)
-  const [live,    setLive]    = useState(false)
+  const leaderboardQuery = useQuery({ queryKey: ['leaderboard'], queryFn: scoresApi.leaderboard })
+  const [rows,  setRows]  = useState<SquadLiveScore[]>([])
+  const [toast, setToast] = useState<GoalEvent | null>(null)
+  const [live,  setLive]  = useState(false)
   const cleanupRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
-    scoresApi.leaderboard().then(setRows).catch(() => {}).finally(() => setLoading(false))
+    if (leaderboardQuery.data) setRows(leaderboardQuery.data)
+  }, [leaderboardQuery.data])
+
+  useEffect(() => {
+    if (leaderboardQuery.error) console.error('[tournaments] failed to load leaderboard', leaderboardQuery.error)
+  }, [leaderboardQuery.error])
+
+  useEffect(() => {
     cleanupRef.current = scoresApi.subscribeToLive({
       onLeaderboard: (data) => { setRows(data); setLive(true) },
       onGoal: (e) => setToast(e),
@@ -90,7 +99,7 @@ function LeaderboardPanel({ wallet }: { wallet: string }) {
     return () => cleanupRef.current?.()
   }, [])
 
-  if (loading) return <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>Loading leaderboard…</p>
+  if (leaderboardQuery.isLoading) return <LoadingState label="Loading leaderboard…" />
   if (rows.length === 0) return <div style={{ textAlign: 'center', marginTop: '60px' }}><p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>No squads yet — be the first to join a tournament!</p></div>
 
   return (
@@ -286,9 +295,13 @@ function SectionHeader({ label, count, color = 'rgba(255,255,255,0.7)' }: { labe
 }
 
 export function FixturesPanel() {
-  const [data,    setData]    = useState<MatchesResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState<string | null>(null)
+  const matchesQuery = useQuery({
+    queryKey: ['matches'],
+    queryFn: scoresApi.matches,
+    // Refresh every 2 min to pick up newly kicked-off matches
+    refetchInterval: 2 * 60_000,
+  })
+  const data = matchesQuery.data ?? null
   const [liveMap, setLiveMap] = useState<Record<string, MatchLiveScore>>({})
 
   function applyScore(s: MatchLiveScore) {
@@ -296,11 +309,10 @@ export function FixturesPanel() {
   }
 
   useEffect(() => {
-    scoresApi.matches()
-      .then(setData)
-      .catch(() => setError('Could not load matches — server may be starting up'))
-      .finally(() => setLoading(false))
+    if (matchesQuery.error) console.error('[tournaments] failed to load matches', matchesQuery.error)
+  }, [matchesQuery.error])
 
+  useEffect(() => {
     const cleanup = scoresApi.subscribeToLive({
       // Batch snapshot on connect (sends all currently known live scores)
       onMatchScores: (scores) => {
@@ -326,16 +338,11 @@ export function FixturesPanel() {
       },
     })
 
-    // Refresh fixture list every 2 min to pick up newly kicked-off matches
-    const interval = setInterval(() => {
-      scoresApi.matches().then(setData).catch(() => {})
-    }, 2 * 60_000)
-
-    return () => { cleanup(); clearInterval(interval) }
+    return cleanup
   }, [])
 
-  if (loading) return <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>Loading matches…</p>
-  if (error)   return <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>{error}</p>
+  if (matchesQuery.isLoading) return <LoadingState label="Loading matches…" />
+  if (matchesQuery.isError)   return <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>Could not load matches — server may be starting up</p>
   if (!data)   return null
 
   const todayAll = [...(data.live ?? []), ...(data.today ?? [])]
@@ -374,75 +381,89 @@ type Tab = 'tournaments' | 'leaderboard'
 export default function TournamentPage() {
   const { connected, publicKey } = useWallet()
   const { squad } = useSquadStore()
+  const queryClient = useQueryClient()
 
   const [tab,         setTab]         = useState<Tab>('tournaments')
-  const [tournaments, setTournaments] = useState<Tournament[]>([])
-  const [loading,     setLoading]     = useState(true)
-  const [error,       setError]       = useState<string | null>(null)
-  const [busy,        setBusy]        = useState<string | null>(null)
   const [showCreate,  setShowCreate]  = useState(false)
   const [form,        setForm]        = useState<CreateTournamentInput>(EMPTY_FORM)
-  const [creating,    setCreating]    = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
   const wallet   = publicKey?.toBase58() ?? ''
   const hasSquad = isComplete(squad)
 
+  const tournamentsQuery = useQuery({ queryKey: ['tournaments'], queryFn: tournamentApi.list })
+  const tournaments = tournamentsQuery.data ?? []
+  const loading     = tournamentsQuery.isLoading
+  const error       = tournamentsQuery.isError ? 'Could not load tournaments. Is the server running?' : null
+
   useEffect(() => {
-    tournamentApi.list()
-      .then(setTournaments)
-      .catch(() => setError('Could not load tournaments. Is the server running?'))
-      .finally(() => setLoading(false))
-  }, [])
+    if (tournamentsQuery.error) console.error('[tournaments] failed to load tournaments', tournamentsQuery.error)
+  }, [tournamentsQuery.error])
+
+  const createMutation = useMutation({
+    mutationFn: (input: CreateTournamentInput) => tournamentApi.create(input),
+    onSuccess: (created) => {
+      queryClient.setQueryData<Tournament[]>(['tournaments'], (prev) => [created, ...(prev ?? [])])
+      setShowCreate(false)
+      setForm(EMPTY_FORM)
+      toast.success('Tournament created!')
+    },
+    onError: (err) => {
+      console.error('[tournaments] failed to create tournament', err)
+      setCreateError(err instanceof Error ? err.message : 'Failed to create')
+    },
+  })
+
+  const joinMutation = useMutation({
+    mutationFn: (id: string) => tournamentApi.join(id, wallet),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<Tournament[]>(['tournaments'], (prev) => (prev ?? []).map((t) => (t.id === updated.id ? updated : t)))
+      toast.success('Joined tournament!')
+    },
+    onError: (err) => {
+      console.error('[tournaments] failed to join tournament', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to join')
+    },
+  })
+
+  const leaveMutation = useMutation({
+    mutationFn: (id: string) => tournamentApi.leave(id, wallet),
+    onSuccess: (_res, id) => {
+      queryClient.setQueryData<Tournament[]>(['tournaments'], (prev) =>
+        (prev ?? []).map((t) => (t.id === id ? { ...t, participants: t.participants.filter((w) => w !== wallet) } : t))
+      )
+      toast.success('Left tournament')
+    },
+    onError: (err) => {
+      console.error('[tournaments] failed to leave tournament', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to leave')
+    },
+  })
+
+  const creating = createMutation.isPending
+  const busy = joinMutation.isPending ? joinMutation.variables : leaveMutation.isPending ? leaveMutation.variables : null
 
   function field(key: keyof CreateTournamentInput, value: string | number) {
     setForm((f) => ({ ...f, [key]: value }))
   }
 
-  async function handleCreate() {
+  function handleCreate() {
     if (!form.name.trim() || !form.startDate || !form.endDate) {
       setCreateError('Name, start date and end date are required.')
       return
     }
-    setCreating(true)
     setCreateError(null)
-    try {
-      const created = await tournamentApi.create(form)
-      setTournaments((prev) => [created, ...prev])
-      setShowCreate(false)
-      setForm(EMPTY_FORM)
-      toast.success('Tournament created!')
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create')
-    } finally {
-      setCreating(false)
-    }
+    createMutation.mutate(form)
   }
 
-  async function handleJoin(id: string) {
+  function handleJoin(id: string) {
     if (!wallet) return
-    setBusy(id)
-    try {
-      const updated = await tournamentApi.join(id, wallet)
-      setTournaments((prev) => prev.map((t) => (t.id === id ? updated : t)))
-      toast.success('Joined tournament!')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to join')
-    } finally { setBusy(null) }
+    joinMutation.mutate(id)
   }
 
-  async function handleLeave(id: string) {
+  function handleLeave(id: string) {
     if (!wallet) return
-    setBusy(id)
-    try {
-      await tournamentApi.leave(id, wallet)
-      setTournaments((prev) =>
-        prev.map((t) => t.id === id ? { ...t, participants: t.participants.filter((w) => w !== wallet) } : t)
-      )
-      toast.success('Left tournament')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to leave')
-    } finally { setBusy(null) }
+    leaveMutation.mutate(id)
   }
 
   const TABS: { id: Tab; label: string }[] = [
@@ -501,7 +522,7 @@ export default function TournamentPage() {
                 </div>
               )}
 
-              {loading && <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>Loading tournaments…</p>}
+              {loading && <LoadingState label="Loading tournaments…" />}
               {error   && <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center', marginTop: '60px' }}>{error}</p>}
 
               {!loading && !error && (
@@ -530,13 +551,13 @@ export default function TournamentPage() {
                               style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: isBusy ? 'default' : 'pointer', flexShrink: 0 }}
                               onMouseEnter={e => { if (!isBusy) { e.currentTarget.style.borderColor = '#f87171'; e.currentTarget.style.color = '#f87171' } }}
                               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}
-                            >{isBusy ? '…' : 'Leave'}</button>
+                            >{isBusy ? <Spinner size={11} /> : 'Leave'}</button>
                           ) : (
                             <button onClick={() => canAct && handleJoin(t.id)} disabled={!canAct || isBusy}
                               style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: canAct ? '#00FF87' : 'rgba(255,255,255,0.07)', color: canAct ? '#0a0e1a' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: canAct && !isBusy ? 'pointer' : 'default', flexShrink: 0 }}
                               onMouseEnter={e => { if (canAct && !isBusy) e.currentTarget.style.background = '#00e07a' }}
                               onMouseLeave={e => { if (canAct && !isBusy) e.currentTarget.style.background = '#00FF87' }}
-                            >{isBusy ? '…' : 'Join'}</button>
+                            >{isBusy ? <Spinner size={11} /> : 'Join'}</button>
                           )}
                         </div>
 
@@ -637,9 +658,10 @@ export default function TournamentPage() {
                   Cancel
                 </button>
                 <button onClick={handleCreate} disabled={creating}
-                  style={{ flex: 2, padding: '12px', borderRadius: '10px', border: 'none', background: creating ? 'rgba(0,255,135,0.5)' : '#00FF87', color: '#0a0e1a', fontWeight: 900, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', cursor: creating ? 'default' : 'pointer' }}
+                  style={{ flex: 2, padding: '12px', borderRadius: '10px', border: 'none', background: creating ? 'rgba(0,255,135,0.5)' : '#00FF87', color: '#0a0e1a', fontWeight: 900, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', cursor: creating ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                   onMouseEnter={e => { if (!creating) e.currentTarget.style.background = '#00e07a' }}
                   onMouseLeave={e => { if (!creating) e.currentTarget.style.background = '#00FF87' }}>
+                  {creating && <Spinner size={12} />}
                   {creating ? 'Creating…' : 'Create Tournament'}
                 </button>
               </div>

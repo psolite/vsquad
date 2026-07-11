@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useSquadStore, filledCount, isComplete } from '@/store/squadStore'
 import { scoresApi } from '@/lib/api/scoresApi'
-import type { MatchesResponse, SquadLiveScore, MatchLiveScore } from '@/lib/api/scoresApi'
+import type { SquadLiveScore, MatchLiveScore } from '@/lib/api/scoresApi'
 
 const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 
@@ -22,31 +23,49 @@ function MatchBadge({ status }: { status: 'upcoming' | 'live' | 'finished' }) {
 export default function DashboardHomePage() {
   const { publicKey, connected } = useWallet()
   const { squad, squadName } = useSquadStore()
-  const [todayPoints,  setTodayPoints]  = useState<Record<string, number>>({})
-  const [totalPoints,  setTotalPoints]  = useState<Record<string, number>>({})
-  const [matches,      setMatches]      = useState<MatchesResponse | null>(null)
+  const wallet = publicKey?.toBase58() ?? null
+
+  const todayQuery = useQuery({
+    queryKey: ['points', wallet, 'today'],
+    queryFn: () => scoresApi.points(wallet!, 'today'),
+    enabled: !!wallet,
+    retry: false,
+  })
+  const totalQuery = useQuery({
+    queryKey: ['points', wallet, 'total'],
+    queryFn: () => scoresApi.points(wallet!, 'total'),
+    enabled: !!wallet,
+    retry: false,
+  })
+  const matchesQuery = useQuery({ queryKey: ['matches'], queryFn: scoresApi.matches })
+  const leaderboardQuery = useQuery({ queryKey: ['leaderboard'], queryFn: scoresApi.leaderboard })
+
+  const [todayPoints,   setTodayPoints]   = useState<Record<string, number>>({})
   const [myLeaderboard, setMyLeaderboard] = useState<SquadLiveScore | null>(null)
-  const [liveMap,      setLiveMap]      = useState<Record<string, MatchLiveScore>>({})
-  const [loading,      setLoading]      = useState(() => !!publicKey)
+  const [liveMap,       setLiveMap]       = useState<Record<string, MatchLiveScore>>({})
+
+  const totalPoints = totalQuery.data ?? {}
+  const matches      = matchesQuery.data ?? null
+  const loading = !!wallet && (todayQuery.isLoading || totalQuery.isLoading || matchesQuery.isLoading || leaderboardQuery.isLoading)
+
+  useEffect(() => {
+    if (todayQuery.data) setTodayPoints(todayQuery.data)
+  }, [todayQuery.data])
+
+  useEffect(() => {
+    if (!leaderboardQuery.data || !wallet) return
+    setMyLeaderboard(leaderboardQuery.data.find(r => r.walletAddress === wallet) ?? null)
+  }, [leaderboardQuery.data, wallet])
+
+  useEffect(() => {
+    for (const q of [todayQuery, totalQuery, matchesQuery, leaderboardQuery]) {
+      if (q.error) console.error('[home] failed to load dashboard data', q.error)
+    }
+  }, [todayQuery.error, totalQuery.error, matchesQuery.error, leaderboardQuery.error])
 
   useEffect(() => {
     if (!publicKey) return
     const wallet = publicKey.toBase58()
-    let cancelled = false
-
-    Promise.allSettled([
-      scoresApi.points(wallet, 'today'),
-      scoresApi.points(wallet, 'total'),
-      scoresApi.matches(),
-      scoresApi.leaderboard(),
-    ]).then(([todayRes, totalRes, mRes, lRes]) => {
-      if (cancelled) return
-      if (todayRes.status === 'fulfilled') setTodayPoints(todayRes.value)
-      if (totalRes.status === 'fulfilled') setTotalPoints(totalRes.value)
-      if (mRes.status    === 'fulfilled') setMatches(mRes.value)
-      if (lRes.status    === 'fulfilled') setMyLeaderboard(lRes.value.find(r => r.walletAddress === wallet) ?? null)
-      setLoading(false)
-    })
 
     const unsub = scoresApi.subscribeToLive({
       onMatchScores: (scores) => {
@@ -58,8 +77,6 @@ export default function DashboardHomePage() {
       },
       onMatchScore: (s) => setLiveMap((prev) => ({ ...prev, [s.fixtureId]: s })),
       onLeaderboard: (rows) => {
-        if (!publicKey) return
-        const wallet = publicKey.toBase58()
         const myRow = rows.find(r => r.walletAddress === wallet)
         if (!myRow) return
         setMyLeaderboard(myRow)
@@ -70,7 +87,7 @@ export default function DashboardHomePage() {
       },
     })
 
-    return () => { cancelled = true; unsub() }
+    return unsub
   }, [publicKey])
 
   const players = [squad.gk, squad.def1, squad.def2, squad.fwd1, squad.fwd2].filter(Boolean) as NonNullable<typeof squad.gk>[]
