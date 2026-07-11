@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { useMutation } from '@tanstack/react-query'
 import { usePrivy } from '@privy-io/react-auth'
 import { useWallet } from '@solana/wallet-adapter-react'
+import Spinner from '@/components/Spinner'
 
 async function post(path: string, body?: unknown) {
   const res = await fetch(path, {
@@ -17,16 +18,6 @@ async function post(path: string, body?: unknown) {
     throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`)
   }
   return res.json()
-}
-
-function Spinner() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" style={{ animation: 'spin 0.7s linear infinite' }}>
-      <style>{'@keyframes spin { to { transform: rotate(360deg) } }'}</style>
-      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
-      <path d="M21 12a9 9 0 0 0-9-9" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  )
 }
 
 export default function GoogleLoginButton() {
@@ -67,7 +58,7 @@ export default function GoogleLoginButton() {
 
   if (!ready) return null
 
-  const email = user?.email?.address ?? user?.google?.email
+  const email = user?.google?.email
 
   if (authenticated) {
     return (
