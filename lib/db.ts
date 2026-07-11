@@ -75,6 +75,14 @@ export async function initDb(): Promise<void> {
       total_points   INTEGER NOT NULL DEFAULT 0,
       PRIMARY KEY (wallet_address, date)
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+      privy_user_id  TEXT PRIMARY KEY,
+      email          TEXT,
+      wallet_address TEXT UNIQUE,
+      created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `)
 
   await pool().query(`
@@ -270,4 +278,52 @@ export async function getAllWalletTotals(): Promise<Array<{ walletAddress: strin
     'SELECT wallet_address, SUM(total_points)::int AS total FROM daily_points GROUP BY wallet_address'
   )
   return rows.map(r => ({ walletAddress: r.wallet_address as string, total: r.total as number }))
+}
+
+// ── User accounts (Privy: email / Google login) ────────────────────────────
+
+export interface UserRecord {
+  privyUserId: string
+  email: string | null
+  walletAddress: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+function rowToUser(row: Record<string, unknown>): UserRecord {
+  return {
+    privyUserId:   row.privy_user_id as string,
+    email:         row.email as string | null,
+    walletAddress: row.wallet_address as string | null,
+    createdAt:     (row.created_at as Date).toISOString(),
+    updatedAt:     (row.updated_at as Date).toISOString(),
+  }
+}
+
+export async function upsertUserFromPrivy(privyUserId: string, email: string | null): Promise<UserRecord> {
+  const { rows } = await pool().query(
+    `INSERT INTO users (privy_user_id, email)
+     VALUES ($1, $2)
+     ON CONFLICT (privy_user_id) DO UPDATE SET
+       email      = EXCLUDED.email,
+       updated_at = NOW()
+     RETURNING *`,
+    [privyUserId, email]
+  )
+  return rowToUser(rows[0])
+}
+
+export async function getUserByPrivyId(privyUserId: string): Promise<UserRecord | undefined> {
+  const { rows } = await pool().query('SELECT * FROM users WHERE privy_user_id = $1', [privyUserId])
+  return rows[0] ? rowToUser(rows[0]) : undefined
+}
+
+export async function linkWalletToUser(privyUserId: string, walletAddress: string): Promise<UserRecord | null> {
+  const { rows } = await pool().query(
+    `UPDATE users SET wallet_address = $2, updated_at = NOW()
+     WHERE privy_user_id = $1 AND (wallet_address IS NULL OR wallet_address = $2)
+     RETURNING *`,
+    [privyUserId, walletAddress]
+  )
+  return rows[0] ? rowToUser(rows[0]) : null
 }

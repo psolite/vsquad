@@ -5,6 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useSquadStore } from "@/store/squadStore";
 import { squadApi } from "@/lib/api/squadApi";
+import GoogleLoginButton from "@/components/GoogleLoginButton";
 
 export default function LandingPage() {
   const { connected, publicKey } = useWallet();
@@ -171,6 +172,19 @@ export default function LandingPage() {
             style={{ background: "#00FF87", transform: "scale(1.15)" }}
           />
           <WalletMultiButton />
+          <div className="flex items-center" style={{ gap: "10px", marginTop: "14px" }}>
+            <div className="flex-1 h-px bg-white/20" />
+            <span
+              className="text-white/70 text-[10px] uppercase font-bold"
+              style={{ letterSpacing: "0.2em" }}
+            >
+              or
+            </span>
+            <div className="flex-1 h-px bg-white/20" />
+          </div>
+          <div style={{ marginTop: "14px" }}>
+            <GoogleLoginButton />
+          </div>
           {checking && (
             <p
               style={{
