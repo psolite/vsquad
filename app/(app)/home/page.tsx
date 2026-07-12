@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { useAccountId } from '@/lib/useAccountId'
 import { useSquadStore, filledCount, isComplete } from '@/store/squadStore'
 import { scoresApi } from '@/lib/api/scoresApi'
@@ -22,8 +23,12 @@ function MatchBadge({ status }: { status: 'upcoming' | 'live' | 'finished' }) {
 
 export default function DashboardHomePage() {
   const { id: accountId } = useAccountId()
+  const { publicKey } = useWallet()
   const { squad, squadName } = useSquadStore()
   const wallet = accountId
+  const displayLabel = publicKey
+    ? `${publicKey.toBase58().slice(0, 4)}…${publicKey.toBase58().slice(-4)}`
+    : null
 
   const todayQuery = useQuery({
     queryKey: ['points', wallet, 'today'],
@@ -105,7 +110,7 @@ export default function DashboardHomePage() {
         <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '6px' }}>{today}</p>
         <h1 style={{ color: '#fff', fontSize: '26px', fontWeight: 900, letterSpacing: '-0.01em', lineHeight: 1 }}>
           Dashboard
-          {accountId && <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400, fontSize: '14px', marginLeft: '12px', letterSpacing: 0 }}>{accountId.slice(0, 4)}…{accountId.slice(-4)}</span>}
+          {displayLabel && <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400, fontSize: '14px', marginLeft: '12px', letterSpacing: 0 }}>{displayLabel}</span>}
         </h1>
       </div>
 
