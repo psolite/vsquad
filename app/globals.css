@@ -21,6 +21,12 @@ body:has(.landing-page) {
 
 html, body { height: 100%; }
 
+/* ── Landing page — keep the whole hero fitting on one screen, no scroll ── */
+@media (max-height: 780px), (max-width: 480px) {
+  .landing-content { gap: 0.75rem !important; padding-top: 0.5rem !important; padding-bottom: 1.25rem !important; }
+  .landing-content h1 { font-size: clamp(32px, 12vw, 90px) !important; }
+}
+
 /* ── Custom scrollbars ─────────────────────────────── */
 * {
   scrollbar-width: thin;

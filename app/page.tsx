@@ -40,8 +40,8 @@ export default function LandingPage() {
 
   return (
     <div
-      className="landing-page relative flex flex-col items-center justify-center flex-1 overflow-x-hidden overflow-y-auto"
-      style={{ minHeight: "100vh" }}
+      className="landing-page relative flex flex-col items-center justify-center flex-1 overflow-hidden"
+      style={{ height: "100svh" }}
     >
       <div
         className="absolute inset-0 pointer-events-none"
@@ -66,8 +66,8 @@ export default function LandingPage() {
       />
 
       <div
-        className="relative z-10 flex flex-col items-center text-center w-full max-w-2xl px-6"
-        style={{ gap: "1.25rem", paddingTop: "2rem", paddingBottom: "3.5rem" }}
+        className="landing-content relative z-10 flex flex-col items-center text-center w-full max-w-2xl px-6"
+        style={{ gap: "1.25rem", paddingTop: "1.5rem", paddingBottom: "2.25rem" }}
       >
         <div className="inline-flex items-center gap-3">
           <div className="h-px w-10 bg-[#00FF87]/40" />
