@@ -41,7 +41,7 @@ export default function LandingPage() {
 
   return (
     <div
-      className="landing-page relative flex flex-col items-center justify-center flex-1 overflow-hidden"
+      className="landing-page relative flex flex-col items-center justify-center flex-1 overflow-x-hidden overflow-y-auto"
       style={{ minHeight: "100vh" }}
     >
       <div
@@ -68,7 +68,7 @@ export default function LandingPage() {
 
       <div
         className="relative z-10 flex flex-col items-center text-center w-full max-w-2xl px-6"
-        style={{ gap: "1.25rem" }}
+        style={{ gap: "1.25rem", paddingTop: "2rem", paddingBottom: "3.5rem" }}
       >
         <div className="inline-flex items-center gap-3">
           <div className="h-px w-10 bg-[#00FF87]/40" />
@@ -81,7 +81,7 @@ export default function LandingPage() {
         <h1
           className="font-black uppercase leading-none select-none"
           style={{
-            fontSize: "clamp(44px, 17vw, 148px)",
+            fontSize: "clamp(40px, 13vw, 110px)",
             letterSpacing: "-0.03em",
             margin: 0,
           }}
@@ -178,13 +178,16 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div className="relative" style={{ padding: "0.5rem" }}>
+        <div
+          className="relative w-full flex flex-col items-center"
+          style={{ padding: "0.5rem", maxWidth: "320px" }}
+        >
           <div
-            className="absolute inset-0 rounded-xl blur-xl opacity-35"
+            className="absolute inset-0 rounded-xl blur-xl opacity-35 pointer-events-none"
             style={{ background: "#00FF87", transform: "scale(1.15)" }}
           />
           <WalletMultiButton />
-          <div className="flex items-center" style={{ gap: "10px", marginTop: "14px" }}>
+          <div className="w-full flex items-center" style={{ gap: "10px", marginTop: "12px" }}>
             <div className="flex-1 h-px bg-white/20" />
             <span
               className="text-white/70 text-[10px] uppercase font-bold"
@@ -194,7 +197,7 @@ export default function LandingPage() {
             </span>
             <div className="flex-1 h-px bg-white/20" />
           </div>
-          <div style={{ marginTop: "14px" }}>
+          <div style={{ marginTop: "12px" }}>
             <GoogleLoginButton />
           </div>
           {checking && (

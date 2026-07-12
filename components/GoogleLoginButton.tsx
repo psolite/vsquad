@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef } from 'react'
-import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useMutation } from '@tanstack/react-query'
 import { usePrivy } from '@privy-io/react-auth'
@@ -21,12 +21,14 @@ async function post(path: string, body?: unknown) {
 }
 
 export default function GoogleLoginButton() {
-  const { ready, authenticated, user, login, logout } = usePrivy()
+  const { ready, authenticated, user, login } = usePrivy()
   const { publicKey, connected } = useWallet()
+  const router = useRouter()
   const synced = useRef<string | null>(null)
 
   const syncMutation = useMutation({
     mutationFn: () => post('/api/auth/sync'),
+    onSuccess: () => router.push('/home'),
     onError: (err) => {
       console.error('[auth] failed to sync Privy user', err)
       toast.error('Could not complete sign-in. Please try again.')
@@ -58,39 +60,14 @@ export default function GoogleLoginButton() {
 
   if (!ready) return null
 
-  const email = user?.google?.email
-
   if (authenticated) {
     return (
       <div
-        className="inline-flex items-center"
-        style={{
-          gap: '10px',
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '10px',
-          padding: '8px 14px',
-        }}
+        className="inline-flex items-center justify-center"
+        style={{ gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 700 }}
       >
-        {syncMutation.isPending && <Spinner />}
-        <span className="text-white/80" style={{ fontSize: '12px', fontWeight: 600 }}>
-          {email ?? 'Signed in'}
-        </span>
-        <button
-          onClick={() => logout()}
-          className="text-white/70"
-          style={{
-            fontSize: '11px',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          Sign out
-        </button>
+        <Spinner size={14} />
+        Signing in…
       </div>
     )
   }
@@ -100,19 +77,20 @@ export default function GoogleLoginButton() {
       onClick={() => login()}
       className="inline-flex items-center justify-center"
       style={{
-        gap: '10px',
+        gap: '9px',
         background: '#fff',
-        color: '#1f1f1f',
+        color: '#000',
         fontWeight: 700,
-        fontSize: '14px',
+        fontSize: '13px',
         borderRadius: '10px',
-        padding: '11px 22px',
-        border: '1px solid rgba(0,0,0,0.08)',
+        padding: '9px 18px',
+        border: '1px solid rgba(0,0,0,0.15)',
         cursor: 'pointer',
         boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
       }}
     >
-      <Image src="/Google.jpg" alt="" width={18} height={18} style={{ borderRadius: '3px' }} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/Google.jpg" alt="" width={17} height={17} style={{ borderRadius: '3px', display: 'block', flexShrink: 0 }} />
       Connect with Google
     </button>
   )

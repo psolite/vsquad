@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { usePrivy } from '@privy-io/react-auth'
 import { scoresApi } from '@/lib/api/scoresApi'
 import type { MatchLiveScore } from '@/lib/api/scoresApi'
 
@@ -111,6 +112,7 @@ interface SidebarProps {
 export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
   const pathname = usePathname()
   const { publicKey, connected } = useWallet()
+  const { ready: privyReady, authenticated, user, logout } = usePrivy()
   const mounted = useSyncExternalStore(noopSubscribe, getClientSnapshot, getServerSnapshot)
 
   return (
