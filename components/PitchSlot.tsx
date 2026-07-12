@@ -36,32 +36,31 @@ export default function PitchSlot({ label, player, isSelected, onClick, onRemove
   const colors = player ? (countryColors[player.country] ?? defaultColors) : defaultColors
 
   return (
-    <div className="flex flex-col items-center" style={{ width: '76px' }}>
+    <div className="flex flex-col items-center w-19">
       <div
-        className={`relative cursor-pointer select-none transition-all duration-150 ${isSelected ? 'scale-110 drop-shadow-[0_0_10px_rgba(0,255,135,0.9)]' : 'hover:scale-105'}`}
-        style={{ width: '58px', height: '50px' }}
+        className={`relative cursor-pointer select-none transition-all duration-150 w-14.5 h-12.5 ${isSelected ? 'scale-110 drop-shadow-[0_0_10px_rgba(0,255,135,0.9)]' : 'hover:scale-105'}`}
         onClick={onClick}
       >
         <Jersey primary={colors.primary} secondary={colors.secondary} empty={!player} />
         {!player && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-lg font-black leading-none ${isSelected ? 'text-[#00FF87]' : 'text-white/70'}`}>+</span>
+            <span className={`text-lg font-black leading-none ${isSelected ? 'text-accent' : 'text-white/70'}`}>+</span>
           </div>
         )}
-        {isSelected && <div className="absolute inset-0 rounded ring-2 ring-[#00FF87]/70 animate-pulse pointer-events-none" />}
+        {isSelected && <div className="absolute inset-0 rounded ring-2 ring-accent/70 animate-pulse pointer-events-none" />}
         {player && (
           <button onClick={(e) => { e.stopPropagation(); onRemove() }} className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center z-10 shadow-md text-[9px] font-bold">✕</button>
         )}
       </div>
 
-      <div className={`mt-1 w-full px-1 py-[3px] rounded-sm text-center transition-colors ${player ? 'bg-[#0d1b2a] text-white' : isSelected ? 'bg-[#00FF87]/20 text-[#00FF87]' : 'bg-[#0d1b2a]/80 text-white/70'}`}>
+      <div className={`mt-1 w-full px-1 py-0.75 rounded-sm text-center transition-colors ${player ? 'bg-[#0d1b2a] text-white' : isSelected ? 'bg-accent/20 text-accent' : 'bg-[#0d1b2a]/80 text-white/70'}`}>
         <span className="block text-[10px] font-bold uppercase tracking-wide truncate leading-tight">
           {player ? player.name.split(' ').slice(-1)[0] : label}
         </span>
       </div>
 
       {player && (
-        <div style={{ marginTop: '2px', padding: '2px 5px', borderRadius: '3px', background: '#003d18', color: '#00FF87', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px', lineHeight: 1 }}>
+        <div className="mt-0.5 py-0.5 px-1.25 rounded-[3px] bg-[#003d18] text-accent text-[9px] font-bold flex items-center gap-0.75 leading-none">
           <FlagImg country={player.country} size={10} shape="rect" />
           <span>{player.position}</span>
         </div>

@@ -97,27 +97,21 @@ export default function MySquadPage() {
   }
   if (checkingServer) {
     return (
-      <div
-        className="flex-1 flex flex-col items-center justify-center"
-        style={{ minHeight: 0, background: "#0a0e1a" }}
-      >
-        <LoadingState label="Loading your squad…" marginTop="0" />
+      <div className="flex-1 flex flex-col items-center justify-center min-h-0 bg-bg">
+        <LoadingState label="Loading your squad…" marginTop="mt-0" />
       </div>
     );
   }
   if (loadError) {
     return (
-      <div
-        className="flex-1 flex flex-col items-center justify-center gap-3"
-        style={{ minHeight: 0, background: "#0a0e1a", padding: "24px", textAlign: "center" }}
-      >
-        <p style={{ color: "#f87171", fontSize: "13px" }}>
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 min-h-0 bg-bg p-6 text-center">
+        <p className="text-[#f87171] text-[13px]">
           Couldn&apos;t load your saved squad: {loadError}
         </p>
-        <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
+        <p className="text-white/70 text-[11px]">
           Account: {accountId ? `${accountId.slice(0, 4)}…${accountId.slice(-4)}` : "—"}
         </p>
-        <a href="/squad" style={{ color: "#00FF87", fontSize: "12px", fontWeight: 700 }}>
+        <a href="/squad" className="text-accent text-xs font-bold">
           Build your squad →
         </a>
       </div>
@@ -169,93 +163,43 @@ export default function MySquadPage() {
   );
 
   return (
-    <div
-      className="flex-1 flex flex-col overflow-hidden"
-      style={{ minHeight: 0, background: "#0a0e1a" }}
-    >
-      <div
-        className="builder-header-row"
-        style={{
-          padding: "12px 24px",
-          flexShrink: 0,
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
-          background: "rgba(255,255,255,0.02)",
-        }}
-      >
+    <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-bg">
+      <div className="flex items-center justify-between flex-wrap gap-2.5 py-3 px-6 shrink-0 border-b border-white/7 bg-white/2">
         <div>
-          <h2
-            style={{
-              color: "#fff",
-              fontWeight: 900,
-              fontSize: "13px",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              margin: 0,
-            }}
-          >
+          <h2 className="text-white font-black text-[13px] uppercase tracking-[0.12em] m-0">
             My Squad
           </h2>
-          <p
-            style={{
-              color: "rgba(255,255,255,0.7)",
-              fontSize: "11px",
-              marginTop: "2px",
-              letterSpacing: "0.05em",
-            }}
-          >
+          <p className="text-white/70 text-[11px] mt-0.5 tracking-wider">
             World Cup 2026 · 5-a-side
           </p>
         </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "16px",
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="flex items-center gap-4 flex-wrap">
           {saveError && (
-            <span style={{ color: "#f87171", fontSize: "11px" }}>
+            <span className="text-[#f87171] text-[11px]">
               {saveError}
             </span>
           )}
           {saving && (
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                color: "rgba(255,255,255,0.7)",
-                fontSize: "11px",
-              }}
-            >
+            <span className="inline-flex items-center gap-1.25 text-white/70 text-[11px]">
               <Spinner size={11} />
               Saving…
             </span>
           )}
           {saved && !saving && !saveError && (
-            <span style={{ color: "rgba(0,255,135,0.6)", fontSize: "11px" }}>
+            <span className="text-accent/60 text-[11px]">
               Saved
             </span>
           )}
-          <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+          <div className="flex items-center gap-1.75">
             <div
-              style={{
-                width: "7px",
-                height: "7px",
-                borderRadius: "50%",
-                background: locked ? "#00FF87" : "#facc15",
-                boxShadow: locked ? "0 0 6px #00FF87" : "0 0 6px #facc15",
-              }}
+              className={`w-1.75 h-1.75 rounded-full ${
+                locked ? "bg-accent shadow-[0_0_6px_#00FF87]" : "bg-[#facc15] shadow-[0_0_6px_#facc15]"
+              }`}
             />
             <span
-              style={{
-                color: locked ? "#00FF87" : "#facc15",
-                fontSize: "11px",
-                fontWeight: 900,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-              }}
+              className={`text-[11px] font-black uppercase tracking-widest ${
+                locked ? "text-accent" : "text-[#facc15]"
+              }`}
             >
               {locked ? "Locked" : "Draft"}
             </span>
@@ -263,29 +207,16 @@ export default function MySquadPage() {
         </div>
       </div>
 
-      <div className="split-view">
-        <div className="split-pitch-col">
+      <div className="flex flex-1 overflow-hidden min-h-0 max-[860px]:flex-col max-[860px]:overflow-y-auto">
+        <div className="w-[42%] shrink-0 border-r border-white/7 p-4 min-h-0 flex flex-col max-[860px]:w-full max-[860px]:h-95 max-[860px]:flex-none max-[860px]:border-r-0 max-[860px]:border-b">
           <div className="flex-1 min-h-0">
             <Pitch squad={squad} selectedSlot={null} onSlotClick={noop} />
           </div>
         </div>
 
-        <div
-          className="split-list-col-scroll"
-          style={{ padding: "20px 24px", gap: "18px" }}
-        >
+        <div className="flex-1 flex flex-col overflow-y-auto min-h-0 max-[860px]:flex-none max-[860px]:h-auto max-[860px]:overflow-visible py-5 px-6 gap-4.5">
           <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "8px",
-                color: "rgba(255,255,255,0.7)",
-                fontSize: "10px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.12em",
-              }}
-            >
+            <label className="block mb-2 text-white/70 text-[10px] font-bold uppercase tracking-[0.12em]">
               Squad Name
             </label>
             {!locked ? (
@@ -295,58 +226,20 @@ export default function MySquadPage() {
                 value={squadName}
                 onChange={(e) => setSquadName(e.target.value)}
                 maxLength={30}
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "10px",
-                  padding: "10px 14px",
-                  color: "#fff",
-                  fontSize: "15px",
-                  fontWeight: 700,
-                  outline: "none",
-                }}
-                onFocus={(e) =>
-                  (e.currentTarget.style.borderColor = "rgba(0,255,135,0.4)")
-                }
-                onBlur={(e) =>
-                  (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")
-                }
+                className="w-full box-border bg-white/5 border border-white/10 rounded-[10px] py-2.5 px-3.5 text-white text-[15px] font-bold outline-none focus:border-accent/40"
               />
             ) : (
-              <p
-                style={{
-                  color: "#00FF87",
-                  fontSize: "18px",
-                  fontWeight: 900,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  margin: 0,
-                }}
-              >
+              <p className="text-accent text-lg font-black uppercase tracking-[0.06em] m-0">
                 {squadName || "—"}
               </p>
             )}
           </div>
 
           <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "8px",
-                color: "rgba(255,255,255,0.7)",
-                fontSize: "10px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.12em",
-              }}
-            >
+            <label className="block mb-2 text-white/70 text-[10px] font-bold uppercase tracking-[0.12em]">
               Players
             </label>
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "6px" }}
-            >
+            <div className="flex flex-col gap-1.5">
               {(["gk", "def1", "def2", "fwd1", "fwd2"] as SlotId[]).map(
                 (id) => {
                   const p = squad[id];
@@ -354,70 +247,28 @@ export default function MySquadPage() {
                   return (
                     <div
                       key={id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.07)",
-                        borderRadius: "12px",
-                        padding: "10px 14px",
-                      }}
+                      className="flex items-center gap-3 bg-white/4 border border-white/7 rounded-xl py-2.5 px-3.5"
                     >
                       <FlagImg country={p.country} size={24} shape="rect" />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p
-                          style={{
-                            color: "#fff",
-                            fontWeight: 700,
-                            fontSize: "13px",
-                            margin: 0,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-[13px] m-0 whitespace-nowrap overflow-hidden text-ellipsis">
                           {p.name}
                         </p>
-                        <p
-                          style={{
-                            color: "rgba(255,255,255,0.7)",
-                            fontSize: "11px",
-                            margin: "2px 0 0",
-                          }}
-                        >
+                        <p className="text-white/70 text-[11px] mt-0.5">
                           {p.country}
                         </p>
                       </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "flex-end",
-                          gap: "3px",
-                          flexShrink: 0,
-                        }}
-                      >
+                      <div className="flex flex-col items-end gap-0.75 shrink-0">
                         <span
+                          className="py-0.5 px-2 rounded-[5px] text-[10px] font-black tracking-[0.06em] uppercase"
                           style={{
                             background: posBg[p.position],
                             color: posColor[p.position],
-                            padding: "2px 8px",
-                            borderRadius: "5px",
-                            fontSize: "10px",
-                            fontWeight: 900,
-                            letterSpacing: "0.06em",
-                            textTransform: "uppercase",
                           }}
                         >
                           {p.position}
                         </span>
-                        <span
-                          style={{
-                            color: "rgba(255,255,255,0.7)",
-                            fontSize: "10px",
-                          }}
-                        >
+                        <span className="text-white/70 text-[10px]">
                           {p.goals}G · {p.caps} caps
                         </span>
                       </div>
@@ -428,40 +279,19 @@ export default function MySquadPage() {
             </div>
           </div>
 
-          <div className="grid-2col-tight" style={{ gap: "8px" }}>
+          <div className="grid grid-cols-2 max-[480px]:grid-cols-1 gap-2">
             {[
               { value: totalGoals, label: "Total Goals" },
               { value: totalCaps, label: "Total Caps" },
             ].map(({ value, label }) => (
               <div
                 key={label}
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: "12px",
-                  padding: "14px",
-                  textAlign: "center",
-                }}
+                className="bg-white/4 border border-white/7 rounded-xl p-3.5 text-center"
               >
-                <div
-                  style={{
-                    color: "#00FF87",
-                    fontSize: "26px",
-                    fontWeight: 900,
-                    lineHeight: 1,
-                  }}
-                >
+                <div className="text-accent text-[26px] font-black leading-none">
                   {value}
                 </div>
-                <div
-                  style={{
-                    color: "rgba(255,255,255,0.7)",
-                    fontSize: "10px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    marginTop: "5px",
-                  }}
-                >
+                <div className="text-white/70 text-[10px] uppercase tracking-widest mt-[5px]">
                   {label}
                 </div>
               </div>
@@ -469,55 +299,19 @@ export default function MySquadPage() {
           </div>
 
           {!locked ? (
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div className="flex gap-2.5">
               <button
                 onClick={() => setShowPickModal(true)}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: "10px",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  background: "transparent",
-                  color: "rgba(255,255,255,0.7)",
-                  fontWeight: 700,
-                  fontSize: "12px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)";
-                  e.currentTarget.style.color = "#fff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
-                  e.currentTarget.style.color = "rgba(255,255,255,0.7)";
-                }}
+                className="flex-1 p-3 rounded-[10px] border border-white/15 bg-transparent text-white/70 font-bold text-xs uppercase tracking-widest cursor-pointer transition-colors hover:border-white/35 hover:text-white"
               >
                 Change Squad
               </button>
               <button
                 onClick={handleLock}
                 disabled={saving}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: "10px",
-                  border: "none",
-                  background: saving ? "rgba(0,255,135,0.5)" : "#00FF87",
-                  color: "#0a0e1a",
-                  fontWeight: 900,
-                  fontSize: "12px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  cursor: saving ? "default" : "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  if (!saving) e.currentTarget.style.background = "#00e07a";
-                }}
-                onMouseLeave={(e) => {
-                  if (!saving) e.currentTarget.style.background = "#00FF87";
-                }}
+                className={`flex-1 p-3 rounded-[10px] border-none text-bg font-black text-xs uppercase tracking-widest transition-colors ${
+                  saving ? "bg-accent/50 cursor-default" : "bg-accent hover:bg-accent-hover cursor-pointer"
+                }`}
               >
                 {saving ? "Saving…" : "Lock In"}
               </button>
@@ -525,27 +319,7 @@ export default function MySquadPage() {
           ) : (
             <button
               onClick={() => setShowPickModal(true)}
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: "10px",
-                border: "1px solid rgba(255,255,255,0.15)",
-                background: "transparent",
-                color: "rgba(255,255,255,0.7)",
-                fontWeight: 700,
-                fontSize: "12px",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)";
-                e.currentTarget.style.color = "#fff";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
-                e.currentTarget.style.color = "rgba(255,255,255,0.7)";
-              }}
+              className="w-full p-3 rounded-[10px] border border-white/15 bg-transparent text-white/70 font-bold text-xs uppercase tracking-widest cursor-pointer transition-colors hover:border-white/35 hover:text-white"
             >
               Pick a New Squad
             </button>
@@ -555,118 +329,31 @@ export default function MySquadPage() {
 
       {showPickModal && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 50,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "16px",
-          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={() => setShowPickModal(false)}
         >
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-[6px]" />
           <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(0,0,0,0.7)",
-              backdropFilter: "blur(6px)",
-            }}
-          />
-          <div
-            style={{
-              position: "relative",
-              zIndex: 10,
-              width: "100%",
-              maxWidth: "380px",
-              background: "#0f1923",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "20px",
-              padding: "28px 24px 24px",
-            }}
+            className="relative z-10 w-full max-w-95 bg-panel border border-white/10 rounded-[20px] pt-7 px-6 pb-6"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setShowPickModal(false)}
-              style={{
-                position: "absolute",
-                top: "14px",
-                right: "14px",
-                background: "rgba(255,255,255,0.07)",
-                border: "none",
-                cursor: "pointer",
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                color: "rgba(255,255,255,0.7)",
-                fontSize: "14px",
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              className="absolute top-3.5 right-3.5 bg-white/7 border-none cursor-pointer w-8 h-8 rounded-full text-white/70 text-sm font-bold flex items-center justify-center"
             >
               ✕
             </button>
-            <h3
-              style={{
-                color: "#fff",
-                fontWeight: 900,
-                fontSize: "16px",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                margin: "0 0 6px",
-              }}
-            >
+            <h3 className="text-white font-black text-base uppercase tracking-[0.08em] mt-0 mb-1.5">
               What would you like to do?
             </h3>
-            <p
-              style={{
-                color: "rgba(255,255,255,0.7)",
-                fontSize: "13px",
-                margin: "0 0 24px",
-                lineHeight: 1.5,
-              }}
-            >
+            <p className="text-white/70 text-[13px] mt-0 mb-6 leading-normal">
               Edit your current squad or wipe it and start fresh.
             </p>
             <button
               onClick={handleEdit}
-              style={{
-                width: "100%",
-                padding: "14px 16px",
-                marginBottom: "10px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.04)",
-                cursor: "pointer",
-                textAlign: "left",
-                display: "flex",
-                alignItems: "center",
-                gap: "14px",
-                transition: "border-color 0.15s",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.borderColor = "rgba(0,255,135,0.35)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")
-              }
+              className="w-full py-3.5 px-4 mb-2.5 rounded-xl border border-white/12 bg-white/4 cursor-pointer text-left flex items-center gap-3.5 transition-colors hover:border-accent/35"
             >
-              <div
-                style={{
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "10px",
-                  background: "rgba(0,255,135,0.1)",
-                  border: "1px solid rgba(0,255,135,0.25)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
+              <div className="w-9.5 h-9.5 rounded-[10px] bg-accent/10 border border-accent/25 flex items-center justify-center shrink-0">
                 <svg
                   width="18"
                   height="18"
@@ -682,64 +369,19 @@ export default function MySquadPage() {
                 </svg>
               </div>
               <div>
-                <p
-                  style={{
-                    color: "#fff",
-                    fontWeight: 800,
-                    fontSize: "13px",
-                    margin: "0 0 2px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                  }}
-                >
+                <p className="text-white font-extrabold text-[13px] mt-0 mb-0.5 uppercase tracking-[0.06em]">
                   Edit Squad
                 </p>
-                <p
-                  style={{
-                    color: "rgba(255,255,255,0.7)",
-                    fontSize: "11px",
-                    margin: 0,
-                  }}
-                >
+                <p className="text-white/70 text-[11px] m-0">
                   Swap or change players in your current squad
                 </p>
               </div>
             </button>
             <button
               onClick={handleDeleteAndNew}
-              style={{
-                width: "100%",
-                padding: "14px 16px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.04)",
-                cursor: "pointer",
-                textAlign: "left",
-                display: "flex",
-                alignItems: "center",
-                gap: "14px",
-                transition: "border-color 0.15s",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.borderColor = "rgba(239,68,68,0.45)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")
-              }
+              className="w-full py-3.5 px-4 rounded-xl border border-white/12 bg-white/4 cursor-pointer text-left flex items-center gap-3.5 transition-colors hover:border-[#ef4444]/45"
             >
-              <div
-                style={{
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "10px",
-                  background: "rgba(239,68,68,0.1)",
-                  border: "1px solid rgba(239,68,68,0.25)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
+              <div className="w-9.5 h-9.5 rounded-[10px] bg-[#ef4444]/10 border border-[#ef4444]/25 flex items-center justify-center shrink-0">
                 <svg
                   width="18"
                   height="18"
@@ -757,25 +399,10 @@ export default function MySquadPage() {
                 </svg>
               </div>
               <div>
-                <p
-                  style={{
-                    color: "#f87171",
-                    fontWeight: 800,
-                    fontSize: "13px",
-                    margin: "0 0 2px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                  }}
-                >
+                <p className="text-[#f87171] font-extrabold text-[13px] mt-0 mb-0.5 uppercase tracking-[0.06em]">
                   Delete &amp; Select New
                 </p>
-                <p
-                  style={{
-                    color: "rgba(255,255,255,0.7)",
-                    fontSize: "11px",
-                    margin: 0,
-                  }}
-                >
+                <p className="text-white/70 text-[11px] m-0">
                   Remove your squad and pick 5 new players
                 </p>
               </div>

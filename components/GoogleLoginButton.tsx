@@ -67,15 +67,7 @@ export default function GoogleLoginButton() {
 
   if (authenticated) {
     return (
-      <div
-        className="inline-flex items-center justify-center"
-        style={{
-          gap: "8px",
-          color: "rgba(255,255,255,0.7)",
-          fontSize: "12px",
-          fontWeight: 700,
-        }}
-      >
+      <div className="inline-flex items-center justify-center gap-2 text-white/70 text-xs font-bold">
         <Spinner size={14} />
         Signing in…
       </div>
@@ -86,19 +78,7 @@ export default function GoogleLoginButton() {
     <button
       type="button"
       onClick={() => login()}
-      className="inline-flex items-center justify-center"
-      style={{
-        gap: "9px",
-        backgroundColor: "#ffffff",
-        color: "#000000",
-        fontWeight: 700,
-        fontSize: "13px",
-        borderRadius: "10px",
-        padding: "9px 18px",
-        border: "1px solid rgba(0,0,0,0.15)",
-        cursor: "pointer",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-      }}
+      className="inline-flex items-center justify-center gap-2.25 bg-white text-black font-bold text-[13px] rounded-[10px] py-2.25 px-4.5 border border-black/15 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.15)]"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -106,7 +86,7 @@ export default function GoogleLoginButton() {
         alt=""
         width={20}
         height={20}
-        style={{ borderRadius: "3px", display: "block", flexShrink: 0 }}
+        className="rounded-[3px] block shrink-0"
       />
       Connect with Google
     </button>

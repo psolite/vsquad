@@ -39,77 +39,36 @@ export default function LandingPage() {
   }, [isError, error, router, accountId]);
 
   return (
-    <div
-      className="landing-page relative flex flex-col items-center justify-center flex-1 overflow-hidden"
-      style={{ height: "100svh" }}
-    >
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(to bottom, rgba(4,8,9,0.15) 0%, rgba(4,8,9,0.25) 40%, rgba(4,8,9,0.7) 100%)",
-        }}
-      />
+    <div className="landing-page relative flex flex-col items-center justify-center flex-1 overflow-hidden h-svh">
+      <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_bottom,rgba(4,8,9,0.15)_0%,rgba(4,8,9,0.25)_40%,rgba(4,8,9,0.7)_100%)]" />
+
+      <div className="absolute pointer-events-none w-175 h-87.5 top-1/2 left-1/2 -translate-x-1/2 translate-y-[-60%] bg-[radial-gradient(ellipse,rgba(0,255,135,0.07)_0%,transparent_70%)] blur-[48px]" />
 
       <div
-        className="absolute pointer-events-none"
-        style={{
-          width: "700px",
-          height: "350px",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -60%)",
-          background:
-            "radial-gradient(ellipse, rgba(0,255,135,0.07) 0%, transparent 70%)",
-          filter: "blur(48px)",
-        }}
-      />
-
-      <div
-        className="landing-content relative z-10 flex flex-col items-center text-center w-full max-w-2xl px-6"
-        style={{ gap: "1.25rem", paddingTop: "1.5rem", paddingBottom: "2.25rem" }}
+        className="relative z-10 flex flex-col items-center text-center w-full max-w-2xl px-6 gap-5 pt-6 pb-9
+          [@media(max-height:780px)]:gap-3 [@media(max-height:780px)]:pt-2 [@media(max-height:780px)]:pb-5
+          [@media(max-width:480px)]:gap-3 [@media(max-width:480px)]:pt-2 [@media(max-width:480px)]:pb-5"
       >
         <div className="inline-flex items-center gap-3">
-          <div className="h-px w-10 bg-[#00FF87]/40" />
-          <span className="text-[#00FF87] text-xs font-black uppercase tracking-[0.3em]">
+          <div className="h-px w-10 bg-accent/40" />
+          <span className="text-accent text-xs font-black uppercase tracking-[0.3em]">
             FIFA World Cup 2026™
           </span>
-          <div className="h-px w-10 bg-[#00FF87]/40" />
+          <div className="h-px w-10 bg-accent/40" />
         </div>
 
-        <h1
-          className="font-black uppercase leading-none select-none"
-          style={{
-            fontSize: "clamp(40px, 13vw, 110px)",
-            letterSpacing: "-0.03em",
-            margin: 0,
-          }}
-        >
+        <h1 className="font-black uppercase leading-none select-none m-0 text-[clamp(40px,13vw,110px)] tracking-[-0.03em]">
           <span className="text-white">V</span>
-          <span
-            style={{
-              color: "#00FF87",
-              textShadow: "0 0 100px rgba(0,255,135,0.4)",
-            }}
-          >
+          <span className="text-accent [text-shadow:0_0_100px_rgba(0,255,135,0.4)]">
             SQUAD
           </span>
         </h1>
 
-        <div className="flex flex-col items-center" style={{ gap: "0.5rem" }}>
-          <p
-            className="text-white/70 font-semibold uppercase"
-            style={{
-              fontSize: "clamp(12px, 2vw, 15px)",
-              letterSpacing: "0.22em",
-            }}
-          >
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-white/70 font-semibold uppercase text-[clamp(12px,2vw,15px)] tracking-[0.22em]">
             5-a-side Fantasy Football
           </p>
-          <div
-            className="flex flex-row items-center flex-wrap justify-center"
-            style={{ gap: "0.6rem" }}
-          >
+          <div className="flex flex-row items-center flex-wrap justify-center gap-[0.6rem]">
             {[
               {
                 label: "1 GK",
@@ -145,30 +104,16 @@ export default function LandingPage() {
               label === "·" ? (
                 <span
                   key={i}
-                  style={{
-                    color,
-                    fontSize: "1rem",
-                    fontWeight: 700,
-                    lineHeight: 1,
-                  }}
+                  className="text-base font-bold leading-none"
+                  style={{ color }}
                 >
                   ·
                 </span>
               ) : (
                 <span
                   key={i}
-                  style={{
-                    background: bg,
-                    color,
-                    border: `1px solid ${border}`,
-                    padding: "6px 16px",
-                    borderRadius: "999px",
-                    fontSize: "11px",
-                    fontWeight: 900,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    whiteSpace: "nowrap",
-                  }}
+                  className="py-1.5 px-4 rounded-full text-[11px] font-black uppercase tracking-[0.08em] whitespace-nowrap"
+                  style={{ background: bg, color, border: `1px solid ${border}` }}
                 >
                   {label}
                 </span>
@@ -177,43 +122,23 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div
-          className="w-full flex flex-col items-center"
-          style={{ padding: "0.5rem", maxWidth: "320px" }}
-        >
-          <div className="relative" style={{ padding: "0.5rem" }}>
-            <div
-              className="absolute inset-0 rounded-xl blur-xl opacity-35 pointer-events-none"
-              style={{ background: "#00FF87", transform: "scale(1.15)" }}
-            />
+        <div className="w-full flex flex-col items-center p-2 max-w-[320px]">
+          <div className="relative p-2">
+            <div className="absolute inset-0 rounded-xl blur-xl opacity-35 pointer-events-none bg-accent scale-115" />
             <WalletMultiButton />
           </div>
-          <div className="w-full flex items-center" style={{ gap: "10px", marginTop: "12px" }}>
+          <div className="w-full flex items-center gap-2.5 mt-3">
             <div className="flex-1 h-px bg-white/20" />
-            <span
-              className="text-white/70 text-[10px] uppercase font-bold"
-              style={{ letterSpacing: "0.2em" }}
-            >
+            <span className="text-white/70 text-[10px] uppercase font-bold tracking-[0.2em]">
               or
             </span>
             <div className="flex-1 h-px bg-white/20" />
           </div>
-          <div style={{ marginTop: "12px" }}>
+          <div className="mt-3">
             <GoogleLoginButton />
           </div>
           {checking && (
-            <div
-              className="inline-flex items-center justify-center"
-              style={{
-                color: "rgba(0,255,135,0.6)",
-                fontSize: "11px",
-                fontWeight: 700,
-                gap: "6px",
-                marginTop: "10px",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-              }}
-            >
+            <div className="inline-flex items-center justify-center gap-1.5 mt-2.5 text-[11px] font-bold tracking-widest uppercase text-accent/60">
               <Spinner size={12} />
               Loading your squad…
             </div>
@@ -221,15 +146,9 @@ export default function LandingPage() {
         </div>
 
         <div className="w-full">
-          <div
-            className="w-full flex items-center gap-4"
-            style={{ marginBottom: "0.75rem" }}
-          >
+          <div className="w-full flex items-center gap-4 mb-3">
             <div className="flex-1 h-px bg-white/20" />
-            <span
-              className="text-white/70 text-[10px] uppercase font-bold"
-              style={{ letterSpacing: "0.2em" }}
-            >
+            <span className="text-white/70 text-[10px] uppercase font-bold tracking-[0.2em]">
               Tournament
             </span>
             <div className="flex-1 h-px bg-white/20" />
@@ -242,19 +161,12 @@ export default function LandingPage() {
             ].map(({ value, label }, i) => (
               <div
                 key={i}
-                className={`flex flex-col items-center ${i > 0 ? "border-l border-white/20" : ""}`}
-                style={{ gap: "0.25rem", padding: "0.25rem 0" }}
+                className={`flex flex-col items-center gap-1 py-1 ${i > 0 ? "border-l border-white/20" : ""}`}
               >
-                <span
-                  className="font-black text-white leading-none"
-                  style={{ fontSize: "clamp(26px, 5vw, 40px)" }}
-                >
+                <span className="font-black text-white leading-none text-[clamp(26px,5vw,40px)]">
                   {value}
                 </span>
-                <span
-                  className="text-white/70 text-[10px] font-medium uppercase"
-                  style={{ letterSpacing: "0.2em" }}
-                >
+                <span className="text-white/70 text-[10px] font-medium uppercase tracking-[0.2em]">
                   {label}
                 </span>
               </div>
@@ -272,12 +184,7 @@ export default function LandingPage() {
         </span>
       </div>
 
-      <div
-        className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
-        style={{
-          background: "linear-gradient(to top, rgba(4,8,9,0.6), transparent)",
-        }}
-      />
+      <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none bg-[linear-gradient(to_top,rgba(4,8,9,0.6),transparent)]" />
     </div>
   );
 }

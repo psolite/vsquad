@@ -85,27 +85,6 @@ export async function initDb(): Promise<void> {
     );
   `)
 
-  await pool().query(`
-    INSERT INTO tournaments (id, name, description, prize, status, start_date, end_date, max_participants)
-    VALUES
-      ('vsquad-global-2026', 'VSquad Global League',
-       'The main VSquad competition for FIFA World Cup 2026. Pick your best 5-a-side and go head-to-head with fans worldwide.',
-       'Global Bragging Rights + VSquad Champion Badge', 'open',
-       '2026-06-11T00:00:00Z', '2026-07-19T00:00:00Z', 10000),
-      ('group-stage-sprint', 'Group Stage Sprint',
-       'Score the most points during the group stage only. Fast, high-stakes, first 3 weeks of the tournament.',
-       'Early Bird Trophy', 'active',
-       '2026-06-11T00:00:00Z', '2026-07-03T00:00:00Z', 5000),
-      ('knockout-kings', 'Knockout Kings',
-       'Only the Round of 32 onwards counts. Every game is a final. Who has the best squad for the business end?',
-       'Knockout Kings Trophy', 'open',
-       '2026-07-04T00:00:00Z', '2026-07-19T00:00:00Z', 3000),
-      ('underdogs-cup', 'Underdogs Cup',
-       'Only players from nations ranked outside the top 20 count. Think outside the box — the underdog always surprises.',
-       'Underdog Champion Badge', 'open',
-       '2026-06-11T00:00:00Z', '2026-07-19T00:00:00Z', 2000)
-    ON CONFLICT (id) DO NOTHING;
-  `)
 }
 
 function rowToSquad(row: Record<string, unknown>): SquadRecord {

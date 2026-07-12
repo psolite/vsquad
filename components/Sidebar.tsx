@@ -61,42 +61,42 @@ function LiveScoresWidget() {
   if (liveFixtures.length === 0) return null
 
   return (
-    <div style={{ padding: '0 12px 10px', flexShrink: 0 }}>
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', paddingLeft: '4px' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF87', boxShadow: '0 0 6px #00FF87', flexShrink: 0 }} />
-          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em' }}>Live Now</span>
-          <span style={{ marginLeft: 'auto', background: 'rgba(0,255,135,0.12)', color: '#00FF87', fontSize: '9px', fontWeight: 900, padding: '1px 6px', borderRadius: '6px' }}>{liveFixtures.length}</span>
+    <div className="px-3 pb-2.5 shrink-0">
+      <div className="border-t border-white/5 pt-3.5">
+        <div className="flex items-center gap-1.5 mb-2 pl-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_6px_#00FF87] shrink-0" />
+          <span className="text-white/70 text-[9px] font-extrabold uppercase tracking-[0.18em]">Live Now</span>
+          <span className="ml-auto bg-accent/12 text-accent text-[9px] font-black py-px px-1.5 rounded-md">{liveFixtures.length}</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        <div className="flex flex-col gap-1.5">
           {liveFixtures.slice(0, 3).map((f) => {
             const s = liveMap[f.fixtureId]
             const h = s?.homeScore ?? f.homeScore
             const a = s?.awayScore ?? f.awayScore
             const min = s?.minute ?? f.minute
             return (
-              <div key={f.fixtureId} style={{ background: 'rgba(0,255,135,0.05)', border: '1px solid rgba(0,255,135,0.12)', borderRadius: '9px', padding: '7px 10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
-                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div key={f.fixtureId} className="bg-accent/5 border border-accent/12 rounded-[9px] py-1.5 px-2.5">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-white/70 text-[10px] font-bold flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
                     {f.homeTeam.slice(0, 3).toUpperCase()}
                   </span>
-                  <span style={{ color: '#00FF87', fontSize: '13px', fontWeight: 900, letterSpacing: '-0.02em', flexShrink: 0 }}>
+                  <span className="text-accent text-[13px] font-black tracking-[-0.02em] shrink-0">
                     {h !== null && a !== null ? `${h}–${a}` : '–'}
                   </span>
-                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                  <span className="text-white/70 text-[10px] font-bold flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-right">
                     {f.awayTeam.slice(0, 3).toUpperCase()}
                   </span>
                 </div>
                 {min != null && (
-                  <div style={{ textAlign: 'center', marginTop: '2px' }}>
-                    <span style={{ color: 'rgba(0,255,135,0.5)', fontSize: '9px', fontWeight: 700 }}>{min}&apos;</span>
+                  <div className="text-center mt-0.5">
+                    <span className="text-accent/50 text-[9px] font-bold">{min}&apos;</span>
                   </div>
                 )}
               </div>
             )
           })}
           {liveFixtures.length > 3 && (
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', textAlign: 'center', margin: 0 }}>+{liveFixtures.length - 3} more</p>
+            <p className="text-white/70 text-[9px] text-center m-0">+{liveFixtures.length - 3} more</p>
           )}
         </div>
       </div>
@@ -116,36 +116,43 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
   const mounted = useSyncExternalStore(noopSubscribe, getClientSnapshot, getServerSnapshot)
 
   return (
-    <aside className={`app-sidebar ${mobileOpen ? 'app-sidebar--open' : ''}`} style={{ width: '220px', flexShrink: 0, height: '100svh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, #080c18 0%, #070a14 100%)', borderRight: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 10 }}>
+    <aside
+      className={`flex flex-col w-55 shrink-0 bg-[linear-gradient(180deg,#080c18_0%,#070a14_100%)] border-r border-white/6 relative z-10 min-[901px]:h-svh max-[900px]:fixed max-[900px]:top-0 max-[900px]:left-0 max-[900px]:bottom-0 max-[900px]:w-62.5 max-[900px]:max-w-[82vw] max-[900px]:overflow-y-auto max-[900px]:transition-transform max-[900px]:duration-[250ms] max-[900px]:z-100 ${mobileOpen ? "max-[900px]:translate-x-0" : "max-[900px]:-translate-x-full"}`}
+    >
 
       {/* Logo */}
-      <div style={{ padding: '20px 18px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
-        <Link href="/" onClick={onNavigate} style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: 'rgba(0,255,135,0.1)', border: '1px solid rgba(0,255,135,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', lineHeight: 1, flexShrink: 0 }}>⚽</div>
-          <span style={{ fontWeight: 900, fontSize: '15px', textTransform: 'uppercase', letterSpacing: '0.14em', lineHeight: 1 }}>
-            <span style={{ color: '#fff' }}>V</span><span style={{ color: '#00FF87' }}>SQUAD</span>
+      <div className="py-5 px-4.5 pb-4.5 border-b border-white/5 shrink-0">
+        <Link href="/" onClick={onNavigate} className="flex items-center gap-2.5 no-underline">
+          <div className="w-8.5 h-8.5 rounded-[9px] bg-accent/10 border border-accent/18 flex items-center justify-center text-base leading-none shrink-0">⚽</div>
+          <span className="font-black text-[15px] uppercase tracking-[0.14em] leading-none">
+            <span className="text-white">V</span><span className="text-accent">SQUAD</span>
           </span>
         </Link>
-        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF87', boxShadow: '0 0 6px #00FF87' }} />
-          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em' }}>FIFA World Cup 2026</span>
+        <div className="mt-2.5 flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_6px_#00FF87]" />
+          <span className="text-white/70 text-[9.5px] font-bold uppercase tracking-[0.18em]">FIFA World Cup 2026</span>
         </div>
       </div>
 
       {/* Nav */}
-      <div style={{ flex: 1, padding: '16px 12px', overflowY: 'auto', minHeight: 0 }}>
-        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '8px', paddingLeft: '8px' }}>Navigation</p>
+      <div className="flex-1 py-4 px-3 overflow-y-auto min-h-0">
+        <p className="text-white/70 text-[9px] font-extrabold uppercase tracking-[0.2em] mb-2 pl-2">Navigation</p>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <nav className="flex flex-col gap-[3px]">
           {NAV_ITEMS.map(({ href, label, Icon }) => {
             const active = pathname === href
             return (
-              <Link key={href} href={href} onClick={onNavigate}
-                style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: active ? '#00FF87' : 'rgba(255,255,255,0.7)', background: active ? 'rgba(0,255,135,0.08)' : 'transparent', border: `1px solid ${active ? 'rgba(0,255,135,0.15)' : 'transparent'}`, fontWeight: active ? 800 : 500, fontSize: '13px', letterSpacing: '0.01em', transition: 'all 0.15s', position: 'relative' }}
-                onMouseEnter={e => { if (!active) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' } }}
-                onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent' } }}
+              <Link
+                key={href}
+                href={href}
+                onClick={onNavigate}
+                className={`flex items-center gap-2.75 py-2.5 px-3 rounded-[10px] no-underline text-[13px] tracking-[0.01em] transition-all duration-150 relative ${
+                  active
+                    ? "text-accent bg-accent/8 border border-accent/15 font-extrabold"
+                    : "text-white/70 bg-transparent border border-transparent font-medium hover:text-white hover:bg-white/4 hover:border-white/6"
+                }`}
               >
-                {active && <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: '3px', height: '60%', borderRadius: '0 3px 3px 0', background: '#00FF87' }} />}
+                {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[60%] rounded-[0_3px_3px_0] bg-accent" />}
                 <Icon />
                 {label}
               </Link>
@@ -153,13 +160,13 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
           })}
         </nav>
 
-        <div style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '12px', paddingLeft: '8px' }}>Tournament</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '8px' }}>
+        <div className="mt-6 border-t border-white/5 pt-5">
+          <p className="text-white/70 text-[9px] font-extrabold uppercase tracking-[0.2em] mb-3 pl-2">Tournament</p>
+          <div className="flex flex-col gap-2 pl-2">
             {[{ label: 'Nations', value: '48' }, { label: 'Matches', value: '104' }, { label: 'Groups', value: '12' }].map(({ label, value }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 500 }}>{label}</span>
-                <span style={{ color: '#fff', fontSize: '12px', fontWeight: 800 }}>{value}</span>
+              <div key={label} className="flex items-center justify-between">
+                <span className="text-white/70 text-[11px] font-medium">{label}</span>
+                <span className="text-white text-xs font-extrabold">{value}</span>
               </div>
             ))}
           </div>
@@ -170,38 +177,36 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
       <LiveScoresWidget />
 
       {/* Wallet */}
-      <div style={{ padding: '14px 14px 18px', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+      <div className="py-3.5 px-3.5 pb-4.5 border-t border-white/5 shrink-0">
         {mounted && privyReady && authenticated && (
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '10px 12px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '1px' }}>Signed in</p>
-              <p style={{ color: '#fff', fontSize: '11px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.google?.email ?? 'Google account'}</p>
+          <div className="bg-white/3 border border-white/7 rounded-[10px] py-2.5 px-3 mb-2.5 flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-white/70 text-[9px] font-bold uppercase tracking-[0.12em] mb-px">Signed in</p>
+              <p className="text-white text-[11px] font-bold overflow-hidden text-ellipsis whitespace-nowrap">{user?.google?.email ?? 'Google account'}</p>
             </div>
             <button
               onClick={() => logout()}
-              style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#f87171' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}
+              className="shrink-0 bg-transparent border-none cursor-pointer text-white/70 text-[10px] font-extrabold uppercase tracking-[0.06em] hover:text-red-400"
             >
               Sign out
             </button>
           </div>
         )}
         {mounted && connected && publicKey && (
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '10px 12px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0, background: 'rgba(0,255,135,0.15)', border: '1px solid rgba(0,255,135,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="bg-white/3 border border-white/7 rounded-[10px] py-2.5 px-3 mb-2.5 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg shrink-0 bg-accent/15 border border-accent/20 flex items-center justify-center">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF87" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '1px' }}>Connected</p>
-              <p style={{ color: '#fff', fontSize: '11px', fontWeight: 700, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shortKey(publicKey.toBase58())}</p>
+            <div className="min-w-0">
+              <p className="text-white/70 text-[9px] font-bold uppercase tracking-[0.12em] mb-px">Connected</p>
+              <p className="text-white text-[11px] font-bold font-mono overflow-hidden text-ellipsis whitespace-nowrap">{shortKey(publicKey.toBase58())}</p>
             </div>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF87', boxShadow: '0 0 5px #00FF87', flexShrink: 0 }} />
+            <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_5px_#00FF87] shrink-0" />
           </div>
         )}
         {mounted && (
           <div className="sidebar-wallet-dropdown">
-            <WalletMultiButton style={{ width: '100%', justifyContent: 'center', fontSize: '12px' }} />
+            <WalletMultiButton className="w-full! justify-center! text-xs!" />
           </div>
         )}
       </div>
