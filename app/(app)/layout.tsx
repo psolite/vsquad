@@ -26,7 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!privyReady || !signedIn) return null
 
   return (
-    <div className="app-shell" style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0a0e1a' }}>
+    <div className="app-shell" style={{ display: 'flex', height: '100svh', overflow: 'hidden', background: '#0a0e1a' }}>
 
       <div className="app-topbar">
         <button

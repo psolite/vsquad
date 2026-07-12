@@ -97,9 +97,13 @@ html, body { height: 100%; }
   .app-sidebar {
     position: fixed !important;
     top: 0; left: 0; bottom: 0;
-    height: 100vh !important;
+    /* top:0 + bottom:0 already stretches to the true visible viewport height —
+       an explicit height:100vh here would override that and push content
+       (the wallet button at the bottom) below the visible area on mobile
+       browsers where 100vh counts space hidden behind the address bar. */
     width: 250px !important;
     max-width: 82vw;
+    overflow-y: auto;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     z-index: 100 !important;

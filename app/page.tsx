@@ -178,14 +178,16 @@ export default function LandingPage() {
         </div>
 
         <div
-          className="relative w-full flex flex-col items-center"
+          className="w-full flex flex-col items-center"
           style={{ padding: "0.5rem", maxWidth: "320px" }}
         >
-          <div
-            className="absolute inset-0 rounded-xl blur-xl opacity-35 pointer-events-none"
-            style={{ background: "#00FF87", transform: "scale(1.15)" }}
-          />
-          <WalletMultiButton />
+          <div className="relative" style={{ padding: "0.5rem" }}>
+            <div
+              className="absolute inset-0 rounded-xl blur-xl opacity-35 pointer-events-none"
+              style={{ background: "#00FF87", transform: "scale(1.15)" }}
+            />
+            <WalletMultiButton />
+          </div>
           <div className="w-full flex items-center" style={{ gap: "10px", marginTop: "12px" }}>
             <div className="flex-1 h-px bg-white/20" />
             <span

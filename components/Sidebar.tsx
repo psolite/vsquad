@@ -116,7 +116,7 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
   const mounted = useSyncExternalStore(noopSubscribe, getClientSnapshot, getServerSnapshot)
 
   return (
-    <aside className={`app-sidebar ${mobileOpen ? 'app-sidebar--open' : ''}`} style={{ width: '220px', flexShrink: 0, height: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, #080c18 0%, #070a14 100%)', borderRight: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 10 }}>
+    <aside className={`app-sidebar ${mobileOpen ? 'app-sidebar--open' : ''}`} style={{ width: '220px', flexShrink: 0, height: '100svh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, #080c18 0%, #070a14 100%)', borderRight: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 10 }}>
 
       {/* Logo */}
       <div style={{ padding: '20px 18px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
