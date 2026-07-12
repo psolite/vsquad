@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useWallet } from '@solana/wallet-adapter-react'
+import { useAccountId } from '@/lib/useAccountId'
 import { useSquadStore, isComplete } from '@/store/squadStore'
 import { tournamentApi } from '@/lib/api/tournamentApi'
 import type { Tournament, CreateTournamentInput } from '@/lib/api/tournamentApi'
@@ -379,7 +379,7 @@ export function FixturesPanel() {
 type Tab = 'tournaments' | 'leaderboard'
 
 export default function TournamentPage() {
-  const { connected, publicKey } = useWallet()
+  const { id: accountId } = useAccountId()
   const { squad } = useSquadStore()
   const queryClient = useQueryClient()
 
@@ -388,7 +388,8 @@ export default function TournamentPage() {
   const [form,        setForm]        = useState<CreateTournamentInput>(EMPTY_FORM)
   const [createError, setCreateError] = useState<string | null>(null)
 
-  const wallet   = publicKey?.toBase58() ?? ''
+  const wallet   = accountId ?? ''
+  const connected = !!accountId
   const hasSquad = isComplete(squad)
 
   const tournamentsQuery = useQuery({ queryKey: ['tournaments'], queryFn: tournamentApi.list })
@@ -512,7 +513,7 @@ export default function TournamentPage() {
               {!connected && (
                 <div style={{ background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.15)', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#facc15" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  <p style={{ color: '#facc15', fontSize: '12px', fontWeight: 600, margin: 0 }}>Connect your wallet to join or create a tournament</p>
+                  <p style={{ color: '#facc15', fontSize: '12px', fontWeight: 600, margin: 0 }}>Sign in to join or create a tournament</p>
                 </div>
               )}
               {connected && !hasSquad && (

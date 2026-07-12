@@ -1,9 +1,29 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { usePrivy } from '@privy-io/react-auth'
 import Sidebar from '@/components/Sidebar'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [navOpen, setNavOpen] = useState(false)
+  const router = useRouter()
+  const { connected, connecting } = useWallet()
+  const { ready: privyReady, authenticated } = usePrivy()
+  const signedIn = connected || authenticated
+
+  useEffect(() => {
+    // While a wallet reconnect attempt is actively in flight, don't even start
+    // the grace timer — wallet extensions announce themselves asynchronously
+    // and can take a while, so bail out here instead of racing a fixed delay.
+    if (!privyReady || signedIn || connecting) return
+    const t = setTimeout(() => {
+      router.push('/')
+    }, 1200)
+    return () => clearTimeout(t)
+  }, [privyReady, signedIn, connecting, router])
+
+  if (!privyReady || !signedIn) return null
 
   return (
     <div className="app-shell" style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0a0e1a' }}>

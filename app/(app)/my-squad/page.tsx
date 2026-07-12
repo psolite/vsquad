@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useAccountId } from "@/lib/useAccountId";
 import { useSquadStore, isComplete } from "@/store/squadStore";
 import type { SlotId } from "@/types";
 import Pitch from "@/components/Pitch";
@@ -23,7 +23,7 @@ const posColor: Record<string, string> = {
 };
 
 export default function MySquadPage() {
-  const { connected, publicKey } = useWallet();
+  const { id: accountId, ready: accountReady } = useAccountId();
   const router = useRouter();
   const {
     squad,
@@ -35,7 +35,6 @@ export default function MySquadPage() {
     loadSquad,
   } = useSquadStore();
 
-  const wallet = publicKey?.toBase58() ?? "";
   const complete = isComplete(squad);
 
   const [showPickModal, setShowPickModal] = useState(false);
@@ -44,9 +43,9 @@ export default function MySquadPage() {
   // or a refresh), pull the saved squad from the server before deciding there
   // isn't one.
   const loadQuery = useQuery({
-    queryKey: ["squad", wallet],
-    queryFn: () => squadApi.get(wallet),
-    enabled: !complete && !!wallet,
+    queryKey: ["squad", accountId],
+    queryFn: () => squadApi.get(accountId!),
+    enabled: !complete && !!accountId,
     retry: false,
   });
   const checkingServer = loadQuery.isLoading;
@@ -68,12 +67,12 @@ export default function MySquadPage() {
     if (!loadQuery.isError) return;
     const err = loadQuery.error;
     if (err instanceof Error && err.message === "Squad not found") return;
-    console.error("[my-squad] failed to load squad", wallet, err);
-  }, [loadQuery.isError, loadQuery.error, wallet]);
+    console.error("[my-squad] failed to load squad", accountId, err);
+  }, [loadQuery.isError, loadQuery.error, accountId]);
 
   const saveMutation = useMutation({
-    mutationFn: (opts: { locked: boolean }) => squadApi.save(wallet, squadName, squad, opts.locked),
-    onError: (err) => console.error("[my-squad] failed to save squad", wallet, err),
+    mutationFn: (opts: { locked: boolean }) => squadApi.save(accountId!, squadName, squad, opts.locked),
+    onError: (err) => console.error("[my-squad] failed to save squad", accountId, err),
   });
   const saving = saveMutation.isPending;
   const saved = saveMutation.isSuccess;
@@ -86,13 +85,13 @@ export default function MySquadPage() {
   // Squad was just completed this session (not loaded from the server) — persist it once on mount.
   const autoSaveTriggered = useRef(false);
   useEffect(() => {
-    if (!complete || !wallet || autoSaveTriggered.current) return;
+    if (!complete || !accountId || autoSaveTriggered.current) return;
     autoSaveTriggered.current = true;
     saveMutation.mutate({ locked });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!connected) {
+  if (accountReady && !accountId) {
     router.push("/");
     return null;
   }
@@ -116,7 +115,7 @@ export default function MySquadPage() {
           Couldn&apos;t load your saved squad: {loadError}
         </p>
         <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "11px" }}>
-          Wallet: {wallet ? `${wallet.slice(0, 4)}…${wallet.slice(-4)}` : "—"}
+          Account: {accountId ? `${accountId.slice(0, 4)}…${accountId.slice(-4)}` : "—"}
         </p>
         <a href="/squad" style={{ color: "#00FF87", fontSize: "12px", fontWeight: 700 }}>
           Build your squad →
@@ -130,7 +129,7 @@ export default function MySquadPage() {
   }
 
   async function handleLock() {
-    if (!wallet) return;
+    if (!accountId) return;
     lockSquad();
     try {
       await saveMutation.mutateAsync({ locked: true });
@@ -147,9 +146,9 @@ export default function MySquadPage() {
 
   async function handleDeleteAndNew() {
     setShowPickModal(false);
-    if (wallet) {
+    if (accountId) {
       try {
-        await squadApi.delete(wallet);
+        await squadApi.delete(accountId);
       } catch {
         /* not yet saved — fine */
       }

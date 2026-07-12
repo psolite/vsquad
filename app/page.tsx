@@ -2,26 +2,25 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useSquadStore } from "@/store/squadStore";
 import { squadApi } from "@/lib/api/squadApi";
+import { useAccountId } from "@/lib/useAccountId";
 import GoogleLoginButton from "@/components/GoogleLoginButton";
 import Spinner from "@/components/Spinner";
 
 export default function LandingPage() {
-  const { connected, publicKey } = useWallet();
+  const { id: accountId } = useAccountId();
   const router = useRouter();
   const { loadSquad } = useSquadStore();
-  const wallet = publicKey?.toBase58() ?? null;
   // Derived, not state: this effect always ends by navigating away, so
   // there's nothing to reset back to false — it's just "are we mid-check".
-  const checking = connected && !!publicKey;
+  const checking = !!accountId;
 
   const { data: squadRecord, isSuccess, isError, error } = useQuery({
-    queryKey: ["squad", wallet],
-    queryFn: () => squadApi.get(wallet!),
-    enabled: connected && !!wallet,
+    queryKey: ["squad", accountId],
+    queryFn: () => squadApi.get(accountId!),
+    enabled: !!accountId,
     retry: false,
   });
 
@@ -34,10 +33,10 @@ export default function LandingPage() {
   useEffect(() => {
     if (!isError) return;
     if (!(error instanceof Error) || error.message !== "Squad not found") {
-      console.error("[landing] failed to load squad for wallet", wallet, error);
+      console.error("[landing] failed to load squad for account", accountId, error);
     }
     router.push("/squad");
-  }, [isError, error, router, wallet]);
+  }, [isError, error, router, accountId]);
 
   return (
     <div

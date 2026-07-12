@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useWallet } from '@solana/wallet-adapter-react'
+import { useAccountId } from '@/lib/useAccountId'
 import { useSquadStore, filledCount, isComplete } from '@/store/squadStore'
 import { scoresApi } from '@/lib/api/scoresApi'
 import type { SquadLiveScore, MatchLiveScore } from '@/lib/api/scoresApi'
@@ -21,9 +21,9 @@ function MatchBadge({ status }: { status: 'upcoming' | 'live' | 'finished' }) {
 }
 
 export default function DashboardHomePage() {
-  const { publicKey, connected } = useWallet()
+  const { id: accountId } = useAccountId()
   const { squad, squadName } = useSquadStore()
-  const wallet = publicKey?.toBase58() ?? null
+  const wallet = accountId
 
   const todayQuery = useQuery({
     queryKey: ['points', wallet, 'today'],
@@ -64,8 +64,8 @@ export default function DashboardHomePage() {
   }, [todayQuery.error, totalQuery.error, matchesQuery.error, leaderboardQuery.error])
 
   useEffect(() => {
-    if (!publicKey) return
-    const wallet = publicKey.toBase58()
+    if (!accountId) return
+    const wallet = accountId
 
     const unsub = scoresApi.subscribeToLive({
       onMatchScores: (scores) => {
@@ -88,7 +88,7 @@ export default function DashboardHomePage() {
     })
 
     return unsub
-  }, [publicKey])
+  }, [accountId])
 
   const players = [squad.gk, squad.def1, squad.def2, squad.fwd1, squad.fwd2].filter(Boolean) as NonNullable<typeof squad.gk>[]
   const todayPts  = players.reduce((sum, p) => sum + (todayPoints[p.id] ?? 0), 0)
@@ -105,7 +105,7 @@ export default function DashboardHomePage() {
         <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '6px' }}>{today}</p>
         <h1 style={{ color: '#fff', fontSize: '26px', fontWeight: 900, letterSpacing: '-0.01em', lineHeight: 1 }}>
           Dashboard
-          {connected && publicKey && <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400, fontSize: '14px', marginLeft: '12px', letterSpacing: 0 }}>{publicKey.toBase58().slice(0, 4)}…{publicKey.toBase58().slice(-4)}</span>}
+          {accountId && <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400, fontSize: '14px', marginLeft: '12px', letterSpacing: 0 }}>{accountId.slice(0, 4)}…{accountId.slice(-4)}</span>}
         </h1>
       </div>
 

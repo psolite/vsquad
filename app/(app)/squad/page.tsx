@@ -1,7 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useWallet } from '@solana/wallet-adapter-react'
+import { useAccountId } from '@/lib/useAccountId'
 import type { Player, Position, SlotId } from '@/types'
 import { useSquadStore, filledCount, isComplete } from '@/store/squadStore'
 import players from '@/data/players'
@@ -21,7 +21,7 @@ const posBadge: Record<Position, { bg: string; color: string }> = {
 }
 
 export default function SquadBuilderPage() {
-  const { connected } = useWallet()
+  const { id: accountId, ready: accountReady } = useAccountId()
   const router = useRouter()
   const { squad, selectedSlot, setPlayer, setSelectedSlot } = useSquadStore()
   const [search, setSearch] = useState('')
@@ -43,7 +43,7 @@ export default function SquadBuilderPage() {
     })
   }, [search, posFilter, activePosition, squad])
 
-  if (!connected) { router.push('/'); return null }
+  if (accountReady && !accountId) { router.push('/'); return null }
 
   function handleSlotClick(slot: SlotId) {
     setSelectedSlot(selectedSlot === slot ? null : slot)

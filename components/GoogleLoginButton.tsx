@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useMutation } from '@tanstack/react-query'
 import { usePrivy } from '@privy-io/react-auth'
@@ -23,12 +22,13 @@ async function post(path: string, body?: unknown) {
 export default function GoogleLoginButton() {
   const { ready, authenticated, user, login } = usePrivy()
   const { publicKey, connected } = useWallet()
-  const router = useRouter()
   const synced = useRef<string | null>(null)
 
   const syncMutation = useMutation({
     mutationFn: () => post('/api/auth/sync'),
-    onSuccess: () => router.push('/home'),
+    // No redirect here — the landing page's own squad lookup (keyed off this
+    // same account id) already handles routing to /my-squad or /squad once
+    // signed in, for both wallet and Google sessions alike.
     onError: (err) => {
       console.error('[auth] failed to sync Privy user', err)
       toast.error('Could not complete sign-in. Please try again.')
