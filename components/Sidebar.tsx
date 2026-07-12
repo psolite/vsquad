@@ -171,6 +171,22 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
 
       {/* Wallet */}
       <div style={{ padding: '14px 14px 18px', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+        {mounted && privyReady && authenticated && (
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '10px 12px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '1px' }}>Signed in</p>
+              <p style={{ color: '#fff', fontSize: '11px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.google?.email ?? 'Google account'}</p>
+            </div>
+            <button
+              onClick={() => logout()}
+              style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#f87171' }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}
+            >
+              Sign out
+            </button>
+          </div>
+        )}
         {mounted && connected && publicKey && (
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '10px 12px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0, background: 'rgba(0,255,135,0.15)', border: '1px solid rgba(0,255,135,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
