@@ -9,7 +9,7 @@ import type { Tournament, CreateTournamentInput } from '@/lib/api/tournamentApi'
 import { scoresApi } from '@/lib/api/scoresApi'
 import type { SquadLiveScore, GoalEvent, Fixture, MatchLiveScore } from '@/lib/api/scoresApi'
 import FlagImg from '@/components/FlagImg'
-import { countryColors } from '@/data/countryColors'
+import { resolveTeam, teamCode } from '@/lib/resolveTeam'
 import Spinner, { LoadingState } from '@/components/Spinner'
 
 const STATUS_STYLE: Record<string, { label: string; bg: string; color: string }> = {
@@ -151,31 +151,6 @@ function LeaderboardPanel({ wallet }: { wallet: string }) {
       </div>
     </>
   )
-}
-
-const TEAM_NAME_MAP: Record<string, string> = {
-  'United States':          'USA', 'US': 'USA',
-  'Korea Republic':         'South Korea', 'Republic of Korea': 'South Korea',
-  'IR Iran':                'Iran',
-  "Côte d'Ivoire":          'Ivory Coast', "Cote d'Ivoire": 'Ivory Coast',
-  'DR Congo':               'Congo DR', 'Democratic Republic of the Congo': 'Congo DR',
-  'Czechia':                'Czech Republic',
-  'Bosnia-Herzegovina':     'Bosnia & Herzegovina', 'Bosnia and Herzegovina': 'Bosnia & Herzegovina',
-  'China PR':               'China',
-}
-
-function resolveTeam(name: string): string {
-  if (!name) return name
-  if (TEAM_NAME_MAP[name]) return TEAM_NAME_MAP[name]
-  if (countryColors[name])  return name
-  const lower = name.toLowerCase()
-  const key = Object.keys(countryColors).find(k => k.toLowerCase() === lower)
-  return key ?? name
-}
-
-function teamCode(name: string): string {
-  const resolved = resolveTeam(name)
-  return countryColors[resolved]?.code ?? name.slice(0, 3).toUpperCase()
 }
 
 function stageLabel(competition: string, round: string): string {
@@ -472,7 +447,7 @@ export default function TournamentPage() {
       <div className="flex items-center justify-between flex-wrap gap-2.5 py-3 px-6 border-b border-white/7 shrink-0 bg-white/2">
         <div>
           <h2 className="text-white font-black text-[13px] uppercase tracking-[0.12em] m-0">VSquad Hub</h2>
-          <p className="text-white/70 text-[11px] mt-0.5 tracking-wider">FIFA World Cup 2026 · Live scores &amp; leaderboard</p>
+          <p className="text-white/70 text-[11px] mt-0.5 tracking-wider">Live scores &amp; leaderboard</p>
         </div>
         {tab === 'tournaments' && connected && (
           <button
@@ -596,7 +571,7 @@ export default function TournamentPage() {
             <button onClick={() => setShowCreate(false)} className="absolute top-3.5 right-3.5 bg-white/7 border-none cursor-pointer w-8 h-8 rounded-full text-white/70 text-sm flex items-center justify-center">✕</button>
 
             <h3 className="text-white font-black text-base uppercase tracking-[0.08em] m-0 mb-1">Create Tournament</h3>
-            <p className="text-white/70 text-xs m-0 mb-5.5">Set up your own league for World Cup 2026</p>
+            <p className="text-white/70 text-xs m-0 mb-5.5">Set up your own private league</p>
 
             <div className="flex flex-col gap-3.5">
               <InputRow label="Tournament Name *">

@@ -95,3 +95,27 @@ export const countryColors: Record<string, CountryColor> = {
 }
 
 export const defaultColors: CountryColor = { primary: '#1a4a2a', secondary: '#2a6a3a', code: '???', flag: null }
+
+// Fixtures occasionally include a country outside our known list (friendlies,
+// qualifiers, etc). Rather than showing the same flat "???" placeholder for
+// all of them, hash the name into a color + code so each unknown country at
+// least gets its own distinct, consistent look instead of a generic default.
+function hashString(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0
+  }
+  return hash
+}
+
+export function fallbackColorFor(name: string): CountryColor {
+  const hash = hashString(name)
+  const hue = hash % 360
+  const code = name.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase()
+  return {
+    primary: `hsl(${hue}, 55%, 42%)`,
+    secondary: `hsl(${(hue + 40) % 360}, 65%, 72%)`,
+    code: code || '???',
+    flag: null,
+  }
+}

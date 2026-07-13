@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
+import { Space_Grotesk } from "next/font/google";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 import Providers from "@/components/Providers";
 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+});
+
 export const metadata: Metadata = {
-  title: "VSquad, a 5-a-Side Fantasy Football · FIFA World Cup 2026",
+  title: "VSquad — 5-a-Side Fantasy Football",
   description:
-    "Pick your 5-a-side squad from the World Cup 2026 player pool and compete in leagues.",
+    "Draft your 5-a-side squad, compete in tournaments, and climb the leaderboard.",
 };
 
 export default function RootLayout({
@@ -14,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className={cn("h-full", spaceGrotesk.variable)}>
       <body className="h-full m-0">
         <Providers>{children}</Providers>
       </body>

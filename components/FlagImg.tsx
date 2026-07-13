@@ -1,5 +1,5 @@
 'use client'
-import { countryColors, defaultColors } from '@/data/countryColors'
+import { countryColors, defaultColors, fallbackColorFor } from '@/data/countryColors'
 
 interface Props {
   country: string
@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function FlagImg({ country, size = 28, shape = 'rect' }: Props) {
-  const colors = countryColors[country] ?? defaultColors
+  const colors = countryColors[country] ?? (country ? fallbackColorFor(country) : defaultColors)
 
   if (colors.flag) {
     return (

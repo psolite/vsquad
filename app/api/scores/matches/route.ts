@@ -65,12 +65,17 @@ export async function GET() {
     const todayEnd   = new Date(); todayEnd.setHours(23, 59, 59, 999)
     const isToday    = (m: FixtureEvent) => m.startTime >= todayStart.getTime() && m.startTime <= todayEnd.getTime()
 
+    // Some fixtures come back from the feed with a final score already
+    // populated but the status still left as "upcoming" — trust the score
+    // over that stale status so already-played matches land in "finished"
+    // instead of "upcoming".
+    const isDone = (m: FixtureEvent) =>
+      m.status !== 'live' && m.homeScore != null && m.awayScore != null
+
     const live     = matches.filter((m) => m.status === 'live')
-    const today    = matches.filter((m) => m.status === 'upcoming' && isToday(m)).sort((a, b) => a.startTime - b.startTime)
-    const upcoming = matches.filter((m) => m.status === 'upcoming' && !isToday(m)).sort((a, b) => a.startTime - b.startTime)
-    const finished = matches
-      .filter((m) => m.status === 'finished' && m.homeScore != null && m.awayScore != null)
-      .sort((a, b) => b.startTime - a.startTime)
+    const finished = matches.filter((m) => isDone(m)).sort((a, b) => b.startTime - a.startTime)
+    const today    = matches.filter((m) => m.status === 'upcoming' && !isDone(m) && isToday(m)).sort((a, b) => a.startTime - b.startTime)
+    const upcoming = matches.filter((m) => m.status === 'upcoming' && !isDone(m) && !isToday(m)).sort((a, b) => a.startTime - b.startTime)
 
     return NextResponse.json({ live, today, finished, upcoming })
   } catch (err: unknown) {

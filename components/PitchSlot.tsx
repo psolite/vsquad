@@ -10,6 +10,8 @@ interface Props {
   isSelected: boolean
   onClick: () => void
   onRemove: () => void
+  points?: number
+  readOnly?: boolean
 }
 
 function Jersey({ primary, secondary, empty }: { primary: string; secondary: string; empty?: boolean }) {
@@ -32,24 +34,29 @@ function Jersey({ primary, secondary, empty }: { primary: string; secondary: str
   )
 }
 
-export default function PitchSlot({ label, player, isSelected, onClick, onRemove }: Props) {
+export default function PitchSlot({ label, player, isSelected, onClick, onRemove, points, readOnly }: Props) {
   const colors = player ? (countryColors[player.country] ?? defaultColors) : defaultColors
 
   return (
     <div className="flex flex-col items-center w-19">
       <div
-        className={`relative cursor-pointer select-none transition-all duration-150 w-14.5 h-12.5 ${isSelected ? 'scale-110 drop-shadow-[0_0_10px_rgba(0,255,135,0.9)]' : 'hover:scale-105'}`}
-        onClick={onClick}
+        className={`relative select-none transition-all duration-150 w-14.5 h-12.5 ${readOnly ? '' : 'cursor-pointer'} ${isSelected ? 'scale-110 drop-shadow-[0_0_10px_rgba(0,255,135,0.9)]' : readOnly ? '' : 'hover:scale-105'}`}
+        onClick={readOnly ? undefined : onClick}
       >
         <Jersey primary={colors.primary} secondary={colors.secondary} empty={!player} />
-        {!player && (
+        {!player && !readOnly && (
           <div className="absolute inset-0 flex items-center justify-center">
             <span className={`text-lg font-black leading-none ${isSelected ? 'text-accent' : 'text-white/70'}`}>+</span>
           </div>
         )}
         {isSelected && <div className="absolute inset-0 rounded ring-2 ring-accent/70 animate-pulse pointer-events-none" />}
-        {player && (
+        {player && !readOnly && (
           <button onClick={(e) => { e.stopPropagation(); onRemove() }} className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center z-10 shadow-md text-[9px] font-bold">✕</button>
+        )}
+        {player && points !== undefined && (
+          <div className={`absolute -top-1.5 -left-1.5 min-w-4.5 h-4.5 px-1 rounded-full flex items-center justify-center z-10 shadow-md text-[9px] font-black leading-none ${points > 0 ? 'bg-accent text-bg' : 'bg-white/15 text-white/70'}`}>
+            {points}
+          </div>
         )}
       </div>
 

@@ -1,9 +1,19 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
+/* --color-accent isn't declared here: shadcn's `@theme inline` block below
+   aliases --color-accent to the semantic --accent var (so both this app's
+   brand-green utility and shadcn's accent/highlight slot stay in sync) —
+   --accent's literal value is set once, in :root. Declaring --color-accent
+   here too would just be silently overridden by that later block, and would
+   create a --accent <-> --color-accent circular reference if --accent ever
+   pointed back at var(--color-accent). */
 @theme {
   --color-bg: #0a0e1a;
   --color-panel: #0f1923;
-  --color-accent: #00FF87;
   --color-accent-hover: #00e07a;
   --font-sans: 'Segoe UI', system-ui, sans-serif;
 }
@@ -13,16 +23,6 @@ body {
   color: #fff;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-}
-
-/* Landing page background — set on body so it's guaranteed to start at the
-   true top of the page, with no dependency on any component's positioning. */
-body:has(.landing-page) {
-  background-image: url(/BackgroundImage.png);
-  background-size: 100% 100%;
-  background-position: center top;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
 }
 
 /* iOS Safari auto-zooms into any focused input/select/textarea with a font-size under 16px */
@@ -44,27 +44,9 @@ body:has(.landing-page) {
 /* ── Wallet adapter button (third-party markup — can't be targeted with our own classes) ── */
 .wallet-adapter-button { background: var(--color-accent) !important; color: var(--color-bg) !important; font-weight: 800 !important; font-size: 14px !important; border-radius: 10px !important; padding: 12px 24px !important; height: auto !important; transition: background 0.15s ease !important; }
 .wallet-adapter-button:hover:not([disabled]) { background: var(--color-accent-hover) !important; }
-.landing-page .wallet-adapter-button { font-size: 14px !important; padding: 11px 22px !important; line-height: normal !important; }
 .wallet-adapter-button-start-icon { display: none !important; }
 .wallet-adapter-dropdown { z-index: 1000 !important; }
 .wallet-adapter-dropdown-list { z-index: 1000 !important; }
-
-/* Sidebar's wallet button sits at the bottom of the viewport, inside a
-   container with overflow:hidden — position:absolute keeps the dropdown
-   trapped inside that clipping box no matter what. position:fixed escapes
-   it entirely and renders as a true overlay above everything. */
-.sidebar-wallet-dropdown .wallet-adapter-dropdown { display: block !important; width: 100%; }
-.sidebar-wallet-dropdown .wallet-adapter-dropdown-list {
-  position: fixed !important;
-  z-index: 1000 !important;
-  left: 14px !important;
-  width: 192px !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: 74px !important;
-  margin: 0 !important;
-}
-.sidebar-wallet-dropdown .wallet-adapter-dropdown-list-active { transform: none !important; }
 .wallet-adapter-modal { background: rgba(0,0,0,0.75) !important; backdrop-filter: blur(8px) !important; }
 .wallet-adapter-modal-wrapper { background: var(--color-panel) !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 20px !important; padding: 32px !important; box-shadow: 0 24px 64px rgba(0,0,0,0.6) !important; max-width: 380px !important; }
 .wallet-adapter-modal-title { color: #ffffff !important; font-size: 18px !important; font-weight: 800 !important; text-align: center !important; margin-bottom: 24px !important; }
@@ -78,3 +60,99 @@ body:has(.landing-page) {
 
 /* ── Spinner keyframes (no Tailwind utility produces this exact rotation animation) ── */
 @keyframes vsquad-spin { to { transform: rotate(360deg) } }
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* This app has no light/dark toggle — it's dark-green themed everywhere, so
+   the shadcn tokens below are tuned once (for :root) to match the existing
+   --color-bg/--color-panel/--color-accent brand palette instead of shadcn's
+   default light/dark pair. --accent here intentionally equals --color-accent
+   so shadcn's built-in "accent" hover/highlight state (Button, Select, etc.)
+   reads as the same brand green rather than a second, competing color. */
+:root {
+  --background: var(--color-bg);
+  --foreground: oklch(0.985 0 0);
+  --card: rgba(255, 255, 255, 0.04);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: var(--color-panel);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: var(--color-accent);
+  --primary-foreground: #04140f;
+  --secondary: rgba(255, 255, 255, 0.08);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: rgba(255, 255, 255, 0.06);
+  --muted-foreground: rgba(255, 255, 255, 0.6);
+  --accent: #00FF87;
+  --accent-foreground: #04140f;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: var(--color-accent);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.75rem;
+  --sidebar: var(--color-panel);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: var(--color-accent);
+  --sidebar-primary-foreground: #04140f;
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: var(--color-accent);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

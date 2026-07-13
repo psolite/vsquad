@@ -3,21 +3,21 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { motion } from 'framer-motion'
+import { Wallet } from 'lucide-react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { usePrivy } from '@privy-io/react-auth'
+import { useConnectModalStore } from '@/store/connectModalStore'
 import { scoresApi } from '@/lib/api/scoresApi'
 import type { MatchLiveScore } from '@/lib/api/scoresApi'
 
 function HomeIcon()     { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> }
-function PitchIcon()    { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><circle cx="12" cy="12" r="3.5"/><line x1="2" y1="12" x2="5.5" y2="12"/><line x1="18.5" y1="12" x2="22" y2="12"/></svg> }
 function SquadIcon()    { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> }
 function TrophyIcon()   { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> }
 function CalendarIcon() { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> }
 
 const NAV_ITEMS = [
   { href: '/home',        label: 'Home',        Icon: HomeIcon     },
-  { href: '/squad',       label: 'Build Squad', Icon: PitchIcon    },
   { href: '/my-squad',   label: 'My Squad',    Icon: SquadIcon    },
   { href: '/tournaments', label: 'Tournaments', Icon: TrophyIcon   },
   { href: '/fixtures',    label: 'Fixtures',    Icon: CalendarIcon },
@@ -111,9 +111,11 @@ interface SidebarProps {
 
 export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
   const pathname = usePathname()
-  const { publicKey, connected } = useWallet()
+  const { publicKey, connected, disconnect } = useWallet()
   const { ready: privyReady, authenticated, user, logout } = usePrivy()
+  const openConnectModal = useConnectModalStore((s) => s.open)
   const mounted = useSyncExternalStore(noopSubscribe, getClientSnapshot, getServerSnapshot)
+  const signedIn = connected || authenticated
 
   return (
     <aside
@@ -121,65 +123,73 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
     >
 
       {/* Logo */}
-      <div className="py-5 px-4.5 pb-4.5 border-b border-white/5 shrink-0">
-        <Link href="/" onClick={onNavigate} className="flex items-center gap-2.5 no-underline">
-          <div className="w-8.5 h-8.5 rounded-[9px] bg-accent/10 border border-accent/18 flex items-center justify-center text-base leading-none shrink-0">⚽</div>
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="py-5 px-4.5 pb-4.5 border-b border-white/5 shrink-0"
+      >
+        <Link href="/home" onClick={onNavigate} className="flex items-center gap-2.5 no-underline">
+          <div className="w-8.5 h-8.5 rounded-[9px] bg-accent/10 border border-accent/18 flex items-center justify-center shrink-0 p-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="" className="w-full h-full object-contain" />
+          </div>
           <span className="font-black text-[15px] uppercase tracking-[0.14em] leading-none">
             <span className="text-white">V</span><span className="text-accent">SQUAD</span>
           </span>
         </Link>
         <div className="mt-2.5 flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_6px_#00FF87]" />
-          <span className="text-white/70 text-[9.5px] font-bold uppercase tracking-[0.18em]">FIFA World Cup 2026</span>
+          <span className="text-white/70 text-[9.5px] font-bold uppercase tracking-[0.18em]">5-a-Side Fantasy Football</span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Nav */}
       <div className="flex-1 py-4 px-3 overflow-y-auto min-h-0">
         <p className="text-white/70 text-[9px] font-extrabold uppercase tracking-[0.2em] mb-2 pl-2">Navigation</p>
 
         <nav className="flex flex-col gap-[3px]">
-          {NAV_ITEMS.map(({ href, label, Icon }) => {
+          {NAV_ITEMS.map(({ href, label, Icon }, i) => {
             const active = pathname === href
             return (
-              <Link
+              <motion.div
                 key={href}
-                href={href}
-                onClick={onNavigate}
-                className={`flex items-center gap-2.75 py-2.5 px-3 rounded-[10px] no-underline text-[13px] tracking-[0.01em] transition-all duration-150 relative ${
-                  active
-                    ? "text-accent bg-accent/8 border border-accent/15 font-extrabold"
-                    : "text-white/70 bg-transparent border border-transparent font-medium hover:text-white hover:bg-white/4 hover:border-white/6"
-                }`}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.04 }}
               >
-                {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[60%] rounded-[0_3px_3px_0] bg-accent" />}
-                <Icon />
-                {label}
-              </Link>
+                <Link
+                  href={href}
+                  onClick={onNavigate}
+                  className={`flex items-center gap-2.75 py-2.5 px-3 rounded-[10px] no-underline text-[13px] tracking-[0.01em] transition-colors duration-150 relative ${
+                    active
+                      ? "text-accent bg-accent/8 border border-accent/15 font-extrabold"
+                      : "text-white/70 bg-transparent border border-transparent font-medium hover:text-white hover:bg-white/4 hover:border-white/6"
+                  }`}
+                >
+                  {active && (
+                    <motion.div
+                      layoutId="sidebar-active-indicator"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-[60%] rounded-[0_3px_3px_0] bg-accent"
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    />
+                  )}
+                  <Icon />
+                  {label}
+                </Link>
+              </motion.div>
             )
           })}
         </nav>
-
-        <div className="mt-6 border-t border-white/5 pt-5">
-          <p className="text-white/70 text-[9px] font-extrabold uppercase tracking-[0.2em] mb-3 pl-2">Tournament</p>
-          <div className="flex flex-col gap-2 pl-2">
-            {[{ label: 'Nations', value: '48' }, { label: 'Matches', value: '104' }, { label: 'Groups', value: '12' }].map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between">
-                <span className="text-white/70 text-[11px] font-medium">{label}</span>
-                <span className="text-white text-xs font-extrabold">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Live Scores */}
       <LiveScoresWidget />
 
-      {/* Wallet */}
+      {/* Account */}
       <div className="py-3.5 px-3.5 pb-4.5 border-t border-white/5 shrink-0">
         {mounted && privyReady && authenticated && (
-          <div className="bg-white/3 border border-white/7 rounded-[10px] py-2.5 px-3 mb-2.5 flex items-center gap-2">
+          <div className="bg-white/3 border border-white/7 rounded-[10px] py-2.5 px-3 mb-2 flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <p className="text-white/70 text-[9px] font-bold uppercase tracking-[0.12em] mb-px">Signed in</p>
               <p className="text-white text-[11px] font-bold overflow-hidden text-ellipsis whitespace-nowrap">{user?.google?.email ?? 'Google account'}</p>
@@ -193,21 +203,30 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
           </div>
         )}
         {mounted && connected && publicKey && (
-          <div className="bg-white/3 border border-white/7 rounded-[10px] py-2.5 px-3 mb-2.5 flex items-center gap-2">
+          <div className="bg-white/3 border border-white/7 rounded-[10px] py-2.5 px-3 flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg shrink-0 bg-accent/15 border border-accent/20 flex items-center justify-center">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF87" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-white/70 text-[9px] font-bold uppercase tracking-[0.12em] mb-px">Connected</p>
               <p className="text-white text-[11px] font-bold font-mono overflow-hidden text-ellipsis whitespace-nowrap">{shortKey(publicKey.toBase58())}</p>
             </div>
-            <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_5px_#00FF87] shrink-0" />
+            <button
+              onClick={() => disconnect()}
+              className="shrink-0 bg-transparent border-none cursor-pointer text-white/70 text-[10px] font-extrabold uppercase tracking-[0.06em] hover:text-red-400"
+            >
+              Disconnect
+            </button>
           </div>
         )}
-        {mounted && (
-          <div className="sidebar-wallet-dropdown">
-            <WalletMultiButton className="w-full! justify-center! text-xs!" />
-          </div>
+        {mounted && !signedIn && (
+          <button
+            onClick={openConnectModal}
+            className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-bg py-2.5 rounded-[10px] font-black text-xs uppercase tracking-widest border-none cursor-pointer transition-colors"
+          >
+            <Wallet size={14} />
+            Connect
+          </button>
         )}
       </div>
     </aside>

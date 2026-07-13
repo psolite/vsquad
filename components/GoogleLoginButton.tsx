@@ -26,9 +26,9 @@ export default function GoogleLoginButton() {
 
   const syncMutation = useMutation({
     mutationFn: () => post("/api/auth/sync"),
-    // No redirect here — the landing page's own squad lookup (keyed off this
-    // same account id) already handles routing to /my-squad or /squad once
-    // signed in, for both wallet and Google sessions alike.
+    // No redirect here — the app shell hydrates whatever squad is saved
+    // server-side as soon as an account id exists, wherever the user happens
+    // to be when they connect, so there's nothing to navigate them to.
     onError: (err) => {
       console.error("[auth] failed to sync Privy user", err);
       toast.error("Could not complete sign-in. Please try again.");

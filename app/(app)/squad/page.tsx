@@ -1,8 +1,9 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAccountId } from '@/lib/useAccountId'
-import type { Player, Position, SlotId } from '@/types'
+import toast from 'react-hot-toast'
+import { Shuffle } from 'lucide-react'
+import type { Player, Position, SlotId, Squad } from '@/types'
 import { useSquadStore, filledCount, isComplete } from '@/store/squadStore'
 import players from '@/data/players'
 import { activeCountries } from '@/data/active'
@@ -14,6 +15,28 @@ const slotPosition: Record<SlotId, Position> = {
   gk: 'GK', def1: 'DEF', def2: 'DEF', fwd1: 'FWD', fwd2: 'FWD',
 }
 
+function randomSquad(): Squad {
+  const usedIds = new Set<string>()
+  const pick = (pos: Position): Player | null => {
+    const pool = players.filter((p) =>
+      p.position === pos &&
+      !usedIds.has(p.id) &&
+      (activeCountries.size === 0 || activeCountries.has(p.country))
+    )
+    if (pool.length === 0) return null
+    const chosen = pool[Math.floor(Math.random() * pool.length)]
+    usedIds.add(chosen.id)
+    return chosen
+  }
+  return {
+    gk:   pick('GK'),
+    def1: pick('DEF'),
+    def2: pick('DEF'),
+    fwd1: pick('FWD'),
+    fwd2: pick('FWD'),
+  }
+}
+
 const posBadge: Record<Position, { bg: string; color: string }> = {
   GK:  { bg: 'rgba(234,179,8,0.15)',  color: '#facc15' },
   DEF: { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa' },
@@ -21,9 +44,8 @@ const posBadge: Record<Position, { bg: string; color: string }> = {
 }
 
 export default function SquadBuilderPage() {
-  const { id: accountId, ready: accountReady } = useAccountId()
   const router = useRouter()
-  const { squad, selectedSlot, setPlayer, setSelectedSlot } = useSquadStore()
+  const { squad, selectedSlot, setPlayer, setSelectedSlot, setSquad } = useSquadStore()
   const [search, setSearch] = useState('')
   const [posFilter, setPosFilter] = useState<Position | 'ALL'>('ALL')
   const [modalPlayer, setModalPlayer] = useState<Player | null>(null)
@@ -43,8 +65,6 @@ export default function SquadBuilderPage() {
     })
   }, [search, posFilter, activePosition, squad])
 
-  if (accountReady && !accountId) { router.push('/'); return null }
-
   function handleSlotClick(slot: SlotId) {
     setSelectedSlot(selectedSlot === slot ? null : slot)
     setPosFilter('ALL')
@@ -54,6 +74,11 @@ export default function SquadBuilderPage() {
     if (!selectedSlot) return
     setPlayer(selectedSlot, player)
     setModalPlayer(null)
+  }
+
+  function handleRandomize() {
+    setSquad(randomSquad())
+    toast.success('Squad randomized!')
   }
 
   const count = filledCount(squad)
@@ -72,7 +97,7 @@ export default function SquadBuilderPage() {
                 Selecting {slotPosition[selectedSlot]} — pick from the list →
               </p>
             : <p className="text-white/70 text-[11px] mt-0.5 tracking-wider">
-                World Cup 2026 · 5-a-side · Tap a slot on the pitch
+                5-a-side · Tap a slot on the pitch
               </p>
           }
         </div>
@@ -91,16 +116,23 @@ export default function SquadBuilderPage() {
           </span>
         </div>
 
-        {complete ? (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => router.push('/my-squad')}
-            className="bg-accent hover:bg-accent-hover text-bg py-2 px-5 rounded-lg font-black text-xs uppercase tracking-widest border-none cursor-pointer transition-colors"
+            onClick={handleRandomize}
+            className="flex items-center gap-1.5 py-2 px-4 rounded-lg border border-white/15 bg-transparent text-white/70 font-black text-xs uppercase tracking-widest cursor-pointer transition-colors hover:border-white/35 hover:text-white"
           >
-            Save Squad →
+            <Shuffle size={13} />
+            Randomize
           </button>
-        ) : (
-          <div className="w-27.5" />
-        )}
+          {complete && (
+            <button
+              onClick={() => router.push('/my-squad')}
+              className="bg-accent hover:bg-accent-hover text-bg py-2 px-5 rounded-lg font-black text-xs uppercase tracking-widest border-none cursor-pointer transition-colors"
+            >
+              Save Squad →
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden min-h-0 max-[860px]:flex-col max-[860px]:overflow-y-auto">
