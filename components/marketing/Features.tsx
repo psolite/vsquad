@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Users, Zap, Trophy, ShieldCheck } from "lucide-react";
 import { GlassPanel } from "@/components/marketing/GlassPanel";
+import { OrbitingBalls } from "@/components/marketing/OrbitingBalls";
 
 const features = [
   {
@@ -42,6 +43,7 @@ export function Features() {
           transition={{ duration: 0.5 }}
           className="mx-auto max-w-xl text-center"
         >
+          <OrbitingBalls />
           <h2 className="text-[clamp(28px,4vw,40px)] font-black tracking-tight text-white">
             Everything you need to compete
           </h2>
