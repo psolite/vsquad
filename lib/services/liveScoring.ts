@@ -382,6 +382,12 @@ export async function backfillFixtureFromHistory(
       const merged = { ...(existing?.playerPoints ?? {}) }
       for (const [playerId, points] of bucket) merged[playerId] = points
       await upsertDailyPoints(wallet, d, merged)
+
+      // This player's points for this fixture are now the authoritative DB
+      // value picked up via _dbTotalsCache — drop the matching live-session
+      // entry (if any) so buildLeaderboard() doesn't add it a second time
+      // on top of the number we just persisted.
+      for (const playerId of bucket.keys()) delete state[wallet]?.[playerId]
     })
   )
 
@@ -447,11 +453,37 @@ export function startLiveScoring() {
     if (data.fixtureId && data.score) {
       const finished = data.action === 'full_time' || data.action === 'match_end'
       applyMatchScore(data.fixtureId, data.score, data.minute, finished ? 'finished' : 'live')
-      if (finished) snapshotPoints().catch((e) => console.error('[scoring] snapshot failed:', e))
+      if (finished) {
+        // Snapshot immediately so whatever was tracked live during the match
+        // isn't lost even if the authoritative recompute below never runs.
+        snapshotPoints().catch((e) => console.error('[scoring] snapshot failed:', e))
+        scheduleFullTimeRecompute(data.fixtureId)
+      }
     }
   })
 
   console.log('[scoring] live scoring started')
+}
+
+// TxOdds's historical endpoint (what backfillFixtureFromHistory reads) isn't
+// necessarily populated the instant full-time fires, so give it a couple of
+// minutes before trusting it as the final answer. This recompute is what
+// actually applies the clean-sheet bonus — full-time is the earliest point
+// a "conceded zero" claim is even true — and it also corrects anything the
+// live goal/card handlers missed (e.g. a player whose live event arrived
+// before _squadCache had caught up with a squad saved mid-match).
+function scheduleFullTimeRecompute(fixtureId: string, delayMs = 2 * 60_000) {
+  setTimeout(() => {
+    const apiToken = (global as Record<string, unknown>).__txoddsToken as string | undefined
+    if (!apiToken) return
+    backfillFixtureFromHistory(apiToken, fixtureId)
+      .then((result) => {
+        console.log(`[scoring] full-time recompute for fixture ${fixtureId}:`, result)
+        return refreshDbTotalsCache()
+      })
+      .then(() => broadcast())
+      .catch((e) => console.error(`[scoring] full-time recompute failed for fixture ${fixtureId}:`, e))
+  }, delayMs)
 }
 
 // ── Daily points snapshot ─────────────────────────────────────────────────────
