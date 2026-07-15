@@ -222,6 +222,16 @@ export async function upsertDailyPoints(
   )
 }
 
+export async function deleteDailyPointsForDate(date: string): Promise<number> {
+  const { rowCount } = await pool().query('DELETE FROM daily_points WHERE date = $1', [date])
+  return rowCount ?? 0
+}
+
+export async function deleteAllDailyPoints(): Promise<number> {
+  const { rowCount } = await pool().query('DELETE FROM daily_points')
+  return rowCount ?? 0
+}
+
 export async function getDailyPoints(walletAddress: string, date: string): Promise<DailyPointsRow | null> {
   const { rows } = await pool().query(
     'SELECT * FROM daily_points WHERE wallet_address = $1 AND date = $2',
@@ -240,6 +250,26 @@ export async function getWalletTotalPoints(walletAddress: string): Promise<{ pla
   const { rows } = await pool().query(
     'SELECT player_points, total_points FROM daily_points WHERE wallet_address = $1',
     [walletAddress]
+  )
+  const merged: Record<string, number> = {}
+  let total = 0
+  for (const row of rows) {
+    total += row.total_points as number
+    for (const [pid, pts] of Object.entries(row.player_points as Record<string, number>)) {
+      merged[pid] = (merged[pid] ?? 0) + pts
+    }
+  }
+  return { playerPoints: merged, total }
+}
+
+export async function getWalletPointsInRange(
+  walletAddress: string,
+  startDate: string,
+  endDate: string,
+): Promise<{ playerPoints: Record<string, number>; total: number }> {
+  const { rows } = await pool().query(
+    'SELECT player_points, total_points FROM daily_points WHERE wallet_address = $1 AND date >= $2 AND date <= $3',
+    [walletAddress, startDate, endDate]
   )
   const merged: Record<string, number> = {}
   let total = 0

@@ -2,7 +2,7 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
 
   const { initDb } = await import('./lib/db')
-  const { refreshSquadCache, startLiveScoring } = await import('./lib/services/liveScoring')
+  const { refreshSquadCache, refreshDbTotalsCache, startLiveScoring } = await import('./lib/services/liveScoring')
   const { probeToken, startScoreStream } = await import('./lib/services/txodds/index')
 
   try {
@@ -14,6 +14,7 @@ export async function register() {
   }
 
   await refreshSquadCache()
+  await refreshDbTotalsCache()
 
   const existingToken = process.env.TXODDS_API_TOKEN
 

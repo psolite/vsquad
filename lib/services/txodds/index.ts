@@ -377,6 +377,45 @@ export async function fetchMatchScore(
   }
 }
 
+// ── Historical per-event replay (who scored/carded, not just the tally) ───────
+// fetchMatchScore() above only reads the running Score/Stats totals out of the
+// historical stream. This walks the same event history but keeps each
+// individual goal/card action (with its PlayerId) — that's what's needed to
+// attribute fantasy points to the right player instead of just the team.
+
+export interface HistoricalMatchEvent {
+  action:      string
+  playerId:    number | null
+  participant: number | null   // 1 or 2 — maps to FixtureInfo.Participant1/2
+  minute:      number
+  raw:         unknown
+}
+
+export async function fetchMatchEvents(apiToken: string, fixtureId: string): Promise<HistoricalMatchEvent[]> {
+  const { apiBase } = cfg()
+  const jwt = await getSessionJwt()
+  const { data } = await axios.get(`${apiBase}/scores/historical/${fixtureId}`, {
+    headers:      authHeaders(apiToken, jwt),
+    responseType: 'text',
+  })
+
+  const events = parseSseEvents(data as string)
+  return events
+    .map((ev: any) => {
+      const update = ev.Update ?? ev
+      const action  = String(update.Action ?? '').toLowerCase()
+      const seconds = update.Clock?.Seconds
+      return {
+        action,
+        playerId:    update.Data?.PlayerId ?? null,
+        participant: update.Participant ?? null,
+        minute:      seconds != null ? Math.floor(seconds / 60) : 0,
+        raw:         ev,
+      }
+    })
+    .filter((e) => e.action)
+}
+
 // ── Probe ─────────────────────────────────────────────────────────────────────
 
 export async function probeToken(apiToken: string): Promise<void> {
@@ -499,4 +538,78 @@ export async function fetchFixtures(
       raw:         f,
     }
   })
+}
+
+// ── Lineups ───────────────────────────────────────────────────────────────────
+
+export interface LineupPlayer {
+  normativeId: number
+  name:        string   // "LastName, FirstName" from TXOdds
+  team:        string
+  position:    string | null
+  shirtNumber: number | null
+  isStarter:   boolean
+}
+
+export interface MatchLineups {
+  fixtureId: string
+  home:      LineupPlayer[]
+  away:      LineupPlayer[]
+}
+
+export async function fetchLineups(
+  apiToken: string,
+  fixtureId: string,
+  participant1IsHome = true,
+): Promise<MatchLineups | null> {
+  const { apiBase } = cfg()
+  try {
+    const jwt = await getSessionJwt()
+    const { data } = await axios.get(`${apiBase}/scores/historical/${fixtureId}`, {
+      headers:      authHeaders(apiToken, jwt),
+      responseType: 'text',
+    })
+
+    const events = parseSseEvents(data as string)
+    const lineupEvent = events.findLast?.((e: any) => String(e.Action ?? '').toLowerCase() === 'lineups')
+      ?? [...events].reverse().find((e: any) => String(e.Action ?? '').toLowerCase() === 'lineups')
+
+    if (!lineupEvent?.Lineups) return null
+
+    const allPlayers: LineupPlayer[] = []
+    for (const teamLineup of (lineupEvent.Lineups as any[])) {
+      const teamName = String(teamLineup.preferredName ?? teamLineup.name ?? '')
+      for (const pl of (teamLineup.lineups ?? teamLineup.players ?? [])) {
+        const player = pl.player ?? pl
+        const nId    = player.normativeId ?? player.id
+        const pName  = String(player.preferredName ?? player.name ?? '')
+        if (!nId || !pName) continue
+        allPlayers.push({
+          normativeId: Number(nId),
+          name:        pName,
+          team:        teamName,
+          position:    pl.position ?? player.position ?? null,
+          shirtNumber: pl.shirtNumber ?? player.shirtNumber ?? null,
+          isStarter:   pl.isStarter ?? pl.starter ?? true,
+        })
+      }
+    }
+
+    // Identify home/away team name from the first player's team (needs fixture context)
+    // Split by participant index if available, otherwise keep as-is
+    const teamNames = [...new Set(allPlayers.map(p => p.team))].slice(0, 2)
+    const p1Team = lineupEvent.Participant1Name ?? teamNames[0] ?? ''
+    const p2Team = lineupEvent.Participant2Name ?? teamNames[1] ?? ''
+    const homeTeamName = participant1IsHome ? p1Team : p2Team
+    const awayTeamName = participant1IsHome ? p2Team : p1Team
+
+    const home = allPlayers.filter(p => p.team === homeTeamName || (!homeTeamName && true))
+    const away = allPlayers.filter(p => p.team === awayTeamName && p.team !== homeTeamName)
+
+    console.log(`[txodds] lineups ${fixtureId}: home=${home.length} away=${away.length}`)
+    return { fixtureId, home, away }
+  } catch (err: any) {
+    console.error(`[txodds] fetchLineups ${fixtureId}:`, err.message)
+    return null
+  }
 }

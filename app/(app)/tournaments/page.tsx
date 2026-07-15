@@ -70,6 +70,129 @@ function GoalToast({ event, onDone }: { event: GoalEvent; onDone: () => void }) 
   )
 }
 
+interface RankedParticipant extends SquadLiveScore { hasSquad: boolean }
+
+function rankWithin(rows: SquadLiveScore[], participants: string[]): RankedParticipant[] {
+  const byWallet = new Map(rows.map((r) => [r.walletAddress, r]))
+  const merged: RankedParticipant[] = participants.map((addr) => {
+    const row = byWallet.get(addr)
+    return row
+      ? { ...row, hasSquad: true }
+      : { walletAddress: addr, squadName: 'No squad yet', totalPoints: 0, rank: 0, players: [], hasSquad: false }
+  })
+  merged.sort((a, b) => b.totalPoints - a.totalPoints)
+  merged.forEach((r, i) => { r.rank = i + 1 })
+  return merged
+}
+
+// The leaderboard's per-row `players[].points` only reflects *today's* live
+// session — a squad's historical points (already rolled into the DB total
+// shown as `totalPoints`) aren't attached to any player there once the day
+// rolls over. This re-fetches that wallet's per-player points scoped to the
+// tournament's own date window, so the expanded breakdown actually sums to
+// a number that means something for this tournament (not the wallet's whole
+// career, and not just "whatever happened today").
+function ParticipantRow({
+  row, isMe, isOpen, onToggle, startDate, endDate,
+}: {
+  row: RankedParticipant; isMe: boolean; isOpen: boolean; onToggle: () => void
+  startDate: string; endDate: string
+}) {
+  const rangeQuery = useQuery({
+    queryKey: ['tournament-points', row.walletAddress, startDate, endDate],
+    queryFn: () => scoresApi.pointsInRange(row.walletAddress, startDate.slice(0, 10), endDate.slice(0, 10)),
+    enabled: isOpen && row.hasSquad,
+  })
+
+  const rangePoints = rangeQuery.data
+  const rangeTotal   = rangePoints ? Object.values(rangePoints).reduce((s, n) => s + n, 0) : null
+  const displayTotal = rangeTotal ?? row.totalPoints
+
+  return (
+    <div className={`rounded-lg ${isMe ? 'bg-accent/6' : 'bg-white/3'} ${!row.hasSquad ? 'opacity-60' : ''}`}>
+      <div
+        onClick={() => row.hasSquad && onToggle()}
+        className={`flex items-center gap-2.5 py-2 px-2.5 ${row.hasSquad ? 'cursor-pointer' : ''}`}
+      >
+        <div className="w-5 text-center text-[10px] font-black text-white/70 shrink-0">
+          {row.hasSquad && row.rank === 1 ? '🥇' : row.hasSquad && row.rank === 2 ? '🥈' : row.hasSquad && row.rank === 3 ? '🥉' : `#${row.rank}`}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className={`font-bold text-xs ${isMe ? 'text-accent' : row.hasSquad ? 'text-white' : 'text-white/50 italic'}`}>{row.squadName}</span>
+            {isMe && <span className="bg-accent/12 text-accent text-[9px] font-black uppercase tracking-widest py-px px-1.5 rounded-sm">You</span>}
+          </div>
+          <span className="text-white/70 text-[10px] font-mono">{shortWallet(row.walletAddress)}</span>
+        </div>
+        <div className="text-right shrink-0">
+          <span className={`font-black text-sm ${row.hasSquad ? 'text-white' : 'text-white/40'}`}>{row.hasSquad ? displayTotal : '–'}</span>
+          {row.hasSquad && <span className="text-white/70 text-[9px] uppercase ml-1">pts</span>}
+        </div>
+      </div>
+
+      {isOpen && row.hasSquad && (
+        <div className="px-2.5 pb-2.5">
+          {rangeQuery.isLoading && <div className="pb-1"><Spinner size={12} /></div>}
+          <div className="flex gap-1.5 flex-wrap">
+            {row.players.map((p) => {
+              // rangePoints has no entry for a player with 0 points that day —
+              // treat "known but absent" as 0, not "still loading."
+              const pts = rangePoints ? (rangePoints[p.playerId] ?? 0) : p.points
+              return (
+                <div key={p.playerId} className={`rounded-lg py-1.25 px-2.25 min-w-15 ${pts > 0 ? 'bg-accent/8' : 'bg-white/4'}`}>
+                  <div className={`text-[10px] font-bold ${pts > 0 ? 'text-accent' : 'text-white/70'}`}>{p.name.split(' ').pop()}</div>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className="text-white/70 text-[9px] uppercase">{p.position}</span>
+                    {p.goals > 0 && <span className="text-[9px]">⚽{p.goals}</span>}
+                    {p.assists > 0 && <span className="text-[9px] text-blue-400">A{p.assists}</span>}
+                    {p.yellowCards > 0 && <span className="text-[9px]">🟨</span>}
+                    {p.redCards > 0 && <span className="text-[9px]">🟥</span>}
+                    <span className={`text-[10px] font-bold ml-0.5 ${pts > 0 ? 'text-accent' : 'text-white/70'}`}>{pts > 0 ? `+${pts}` : '0'}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TournamentParticipants({
+  participants, wallet, startDate, endDate,
+}: { participants: string[]; wallet: string; startDate: string; endDate: string }) {
+  const leaderboardQuery = useQuery({ queryKey: ['leaderboard'], queryFn: scoresApi.leaderboard })
+  const [liveRows, setLiveRows] = useState<SquadLiveScore[] | null>(null)
+  const [openWallet, setOpenWallet] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLiveRows(null)
+    return scoresApi.subscribeToLive({ onLeaderboard: setLiveRows })
+  }, [])
+
+  if (leaderboardQuery.isLoading && !liveRows) return <div className="pt-3"><Spinner size={14} /></div>
+  if (leaderboardQuery.isError && !liveRows)   return <p className="text-red-400 text-[11px] pt-3">Could not load rankings</p>
+
+  const rows = rankWithin(liveRows ?? leaderboardQuery.data ?? [], participants)
+
+  return (
+    <div className="flex flex-col gap-1.5 pt-3 border-t border-white/6 mt-3">
+      {rows.map((row) => (
+        <ParticipantRow
+          key={row.walletAddress}
+          row={row}
+          isMe={row.walletAddress === wallet}
+          isOpen={openWallet === row.walletAddress}
+          onToggle={() => setOpenWallet(openWallet === row.walletAddress ? null : row.walletAddress)}
+          startDate={startDate}
+          endDate={endDate}
+        />
+      ))}
+    </div>
+  )
+}
+
 function LeaderboardPanel({ wallet }: { wallet: string }) {
   const leaderboardQuery = useQuery({ queryKey: ['leaderboard'], queryFn: scoresApi.leaderboard })
   const [rows,  setRows]  = useState<SquadLiveScore[]>([])
@@ -353,6 +476,7 @@ export default function TournamentPage() {
   const queryClient = useQueryClient()
 
   const [tab,         setTab]         = useState<Tab>('tournaments')
+  const [expandedId,  setExpandedId]  = useState<string | null>(null)
   const [showCreate,  setShowCreate]  = useState(false)
   const [form,        setForm]        = useState<CreateTournamentInput>(EMPTY_FORM)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -501,9 +625,14 @@ export default function TournamentPage() {
                     const statusStyle = STATUS_STYLE[t.status] ?? STATUS_STYLE.open
                     const pct         = Math.round((t.participants.length / t.maxParticipants) * 100)
                     const canAct      = connected && hasSquad && t.status !== 'ended'
+                    const isExpanded  = expandedId === t.id
 
                     return (
-                      <div key={t.id} className={`rounded-[14px] py-4.5 px-5 border ${isJoined ? 'bg-accent/4 border-accent/18' : 'bg-white/3 border-white/7'}`}>
+                      <div
+                        key={t.id}
+                        onClick={() => setExpandedId(isExpanded ? null : t.id)}
+                        className={`rounded-[14px] py-4.5 px-5 border cursor-pointer ${isJoined ? 'bg-accent/4 border-accent/18' : 'bg-white/3 border-white/7'}`}
+                      >
                         <div className="flex items-start justify-between gap-3 mb-2.5">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-1.5">
@@ -515,11 +644,11 @@ export default function TournamentPage() {
                           </div>
 
                           {isJoined ? (
-                            <button onClick={() => handleLeave(t.id)} disabled={isBusy}
+                            <button onClick={(e) => { e.stopPropagation(); handleLeave(t.id) }} disabled={isBusy}
                               className={`py-2 px-4 rounded-lg border border-white/15 bg-transparent text-white/70 text-[11px] font-bold uppercase tracking-[0.08em] shrink-0 ${isBusy ? 'cursor-default' : 'cursor-pointer hover:border-red-400 hover:text-red-400'}`}
                             >{isBusy ? <Spinner size={11} /> : 'Leave'}</button>
                           ) : (
-                            <button onClick={() => canAct && handleJoin(t.id)} disabled={!canAct || isBusy}
+                            <button onClick={(e) => { e.stopPropagation(); canAct && handleJoin(t.id) }} disabled={!canAct || isBusy}
                               className={`py-2 px-4 rounded-lg border-none text-[11px] font-black uppercase tracking-[0.08em] shrink-0 ${canAct ? 'bg-accent text-bg' : 'bg-white/7 text-white/70'} ${canAct && !isBusy ? 'cursor-pointer hover:bg-accent-hover' : 'cursor-default'}`}
                             >{isBusy ? <Spinner size={11} /> : 'Join'}</button>
                           )}
@@ -549,6 +678,21 @@ export default function TournamentPage() {
                             </div>
                           )}
                         </div>
+
+                        <div className="flex items-center justify-center gap-1 mt-3 text-white/70 text-[10px] font-bold uppercase tracking-widest">
+                          {isExpanded ? 'Hide ranking' : 'Show ranking'}
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+
+                        {isExpanded && (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            {t.participants.length === 0 ? (
+                              <p className="text-white/70 text-[11px] pt-3 text-center">No one has joined yet.</p>
+                            ) : (
+                              <TournamentParticipants participants={t.participants} wallet={wallet} startDate={t.startDate} endDate={t.endDate} />
+                            )}
+                          </div>
+                        )}
                       </div>
                     )
                   })}

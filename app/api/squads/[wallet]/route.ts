@@ -22,7 +22,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     if (!ok) return NextResponse.json({ error: 'Squad not found' }, { status: 404 })
     // Loaded lazily — pulls in the whole TxOdds/Solana toolchain, which has
     // no business being a hard dependency of "delete a row from Postgres".
-    import('@/lib/services/liveScoring').then((m) => m.refreshSquadCache()).catch(() => {})
+    import('@/lib/services/liveScoring').then((m) => m.refreshSquadCache()).catch((err) => console.error('[squads] refreshSquadCache failed:', err))
     return NextResponse.json({ message: 'Squad deleted' })
   } catch (err: unknown) {
     console.error('[squads] failed to delete squad for wallet', wallet, err)

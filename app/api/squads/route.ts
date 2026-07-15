@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     // Refresh in-memory squad cache so leaderboard stays accurate. Loaded
     // lazily — this pulls in the whole TxOdds/Solana toolchain, which has no
     // business being a hard dependency of "save a squad to Postgres".
-    import('@/lib/services/liveScoring').then((m) => m.refreshSquadCache()).catch(() => {})
+    import('@/lib/services/liveScoring').then((m) => m.refreshSquadCache()).catch((err) => console.error('[squads] refreshSquadCache failed:', err))
     return NextResponse.json(saved, { status: 201 })
   } catch (err: unknown) {
     console.error('[squads] failed to save squad for wallet', walletAddress, err)

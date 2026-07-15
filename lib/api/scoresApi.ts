@@ -75,6 +75,14 @@ export const scoresApi = {
     return res.json()
   },
 
+  // Per-player points a wallet earned within [start, end] (YYYY-MM-DD,
+  // inclusive) — e.g. scoping a squad's breakdown to one tournament's window.
+  pointsInRange: async (wallet: string, start: string, end: string): Promise<Record<string, number>> => {
+    const res = await fetch(`/api/scores/points?wallet=${encodeURIComponent(wallet)}&mode=range&start=${start}&end=${end}`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return res.json()
+  },
+
   subscribeToLive(handlers: {
     onGoal?:        (e: GoalEvent) => void
     onLeaderboard?: (rows: SquadLiveScore[]) => void

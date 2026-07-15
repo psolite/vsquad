@@ -65,12 +65,17 @@ export async function GET() {
     const todayEnd   = new Date(); todayEnd.setHours(23, 59, 59, 999)
     const isToday    = (m: FixtureEvent) => m.startTime >= todayStart.getTime() && m.startTime <= todayEnd.getTime()
 
-    // Some fixtures come back from the feed with a final score already
-    // populated but the status still left as "upcoming" — trust the score
-    // over that stale status so already-played matches land in "finished"
-    // instead of "upcoming".
+    // A fixture counts as done if either:
+    //  - its status already correctly reads "finished" (even if score
+    //    enrichment failed and homeScore/awayScore came back null — TxOdds's
+    //    historical event feed doesn't always have data for a fixture yet,
+    //    and that fixture must still show up *somewhere* instead of silently
+    //    failing every bucket check and vanishing from the response), or
+    //  - it has a final score despite the status field still saying
+    //    "upcoming" (a separate feed quirk — trust the score over the stale
+    //    status so already-played matches land in "finished" instead).
     const isDone = (m: FixtureEvent) =>
-      m.status !== 'live' && m.homeScore != null && m.awayScore != null
+      m.status !== 'live' && (m.status === 'finished' || (m.homeScore != null && m.awayScore != null))
 
     const live     = matches.filter((m) => m.status === 'live')
     const finished = matches.filter((m) => isDone(m)).sort((a, b) => b.startTime - a.startTime)

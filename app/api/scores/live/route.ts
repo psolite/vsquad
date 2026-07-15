@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { scoreEmitter } from '@/lib/services/txodds/index'
-import { liveScoringEmitter, buildLeaderboard, getMatchScores } from '@/lib/services/liveScoring'
+import { liveScoringEmitter, buildLeaderboard, refreshSquadCache, refreshDbTotalsCache, getMatchScores } from '@/lib/services/liveScoring'
 import type { GoalEvent } from '@/lib/services/txodds/index'
 import type { MatchLiveScore } from '@/lib/services/liveScoring'
 
@@ -11,12 +11,14 @@ export async function GET(request: NextRequest) {
   const encoder = new TextEncoder()
 
   const stream = new ReadableStream({
-    start(controller) {
+    async start(controller) {
       const enqueue = (text: string) => {
         try { controller.enqueue(encoder.encode(text)) } catch { /* client disconnected */ }
       }
 
-      // Send current state immediately on connect
+      // Send current state immediately on connect. Refresh first — see the
+      // comment in /api/scores/leaderboard for why the caches can't be trusted.
+      await Promise.all([refreshSquadCache(), refreshDbTotalsCache()])
       enqueue(`event: leaderboard\ndata: ${JSON.stringify(buildLeaderboard())}\n\n`)
       const currentScores = getMatchScores()
       if (currentScores.length > 0) {
