@@ -21,6 +21,13 @@ const STATUS_STYLE: Record<string, { label: string; bg: string; color: string }>
 function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
+// A tournament is done once its end date has passed, regardless of whatever
+// `status` was set to at creation — that field never auto-transitions on its
+// own, so a tournament left as "open"/"active" past its end date would
+// otherwise still let people join or leave it forever.
+function isTournamentEnded(t: { status: string; endDate: string }) {
+  return t.status === 'ended' || new Date(t.endDate).getTime() < Date.now()
+}
 function shortWallet(addr: string) { return `${addr.slice(0, 4)}…${addr.slice(-4)}` }
 function fmtTime(ms: number) {
   return new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -85,38 +92,59 @@ function rankWithin(rows: SquadLiveScore[], participants: string[]): RankedParti
   return merged
 }
 
+// Shared by both the podium and the regular list rows — renders one squad's
+// 5-player point breakdown, scoped to whatever range query the parent
+// already fetched for the currently-open wallet.
+function PlayerBreakdown({ row, rangePoints, isLoading }: {
+  row: RankedParticipant; rangePoints: Record<string, number> | undefined; isLoading: boolean
+}) {
+  return (
+    <div className="px-2.5 pb-2.5">
+      {isLoading && <div className="pb-1"><Spinner size={12} /></div>}
+      <div className="flex gap-1.5 flex-wrap">
+        {row.players.map((p) => {
+          // rangePoints has no entry for a player with 0 points that day —
+          // treat "known but absent" as 0, not "still loading."
+          const pts = rangePoints ? (rangePoints[p.playerId] ?? 0) : p.points
+          return (
+            <div key={p.playerId} className={`rounded-lg py-1.25 px-2.25 min-w-15 ${pts > 0 ? 'bg-accent/8' : 'bg-white/4'}`}>
+              <div className={`text-[10px] font-bold ${pts > 0 ? 'text-accent' : 'text-white/70'}`}>{p.name.split(' ').pop()}</div>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="text-white/70 text-[9px] uppercase">{p.position}</span>
+                {p.goals > 0 && <span className="text-[9px]">⚽{p.goals}</span>}
+                {p.assists > 0 && <span className="text-[9px] text-blue-400">A{p.assists}</span>}
+                {p.yellowCards > 0 && <span className="text-[9px]">🟨</span>}
+                {p.redCards > 0 && <span className="text-[9px]">🟥</span>}
+                <span className={`text-[10px] font-bold ml-0.5 ${pts > 0 ? 'text-accent' : 'text-white/70'}`}>{pts > 0 ? `+${pts}` : '0'}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // The leaderboard's per-row `players[].points` only reflects *today's* live
 // session — a squad's historical points (already rolled into the DB total
 // shown as `totalPoints`) aren't attached to any player there once the day
-// rolls over. This re-fetches that wallet's per-player points scoped to the
-// tournament's own date window, so the expanded breakdown actually sums to
-// a number that means something for this tournament (not the wallet's whole
-// career, and not just "whatever happened today").
+// rolls over. `displayTotal` comes from the parent's range-scoped query for
+// whichever wallet is currently open, so the number shown actually sums to
+// something meaningful for this tournament (not the wallet's whole career,
+// and not just "whatever happened today").
 function ParticipantRow({
-  row, isMe, isOpen, onToggle, startDate, endDate,
+  row, isMe, isOpen, onToggle, displayTotal, rangePoints, isLoadingRange,
 }: {
   row: RankedParticipant; isMe: boolean; isOpen: boolean; onToggle: () => void
-  startDate: string; endDate: string
+  displayTotal: number; rangePoints: Record<string, number> | undefined; isLoadingRange: boolean
 }) {
-  const rangeQuery = useQuery({
-    queryKey: ['tournament-points', row.walletAddress, startDate, endDate],
-    queryFn: () => scoresApi.pointsInRange(row.walletAddress, startDate.slice(0, 10), endDate.slice(0, 10)),
-    enabled: isOpen && row.hasSquad,
-  })
-
-  const rangePoints = rangeQuery.data
-  const rangeTotal   = rangePoints ? Object.values(rangePoints).reduce((s, n) => s + n, 0) : null
-  const displayTotal = rangeTotal ?? row.totalPoints
-
   return (
     <div className={`rounded-lg ${isMe ? 'bg-accent/6' : 'bg-white/3'} ${!row.hasSquad ? 'opacity-60' : ''}`}>
       <div
         onClick={() => row.hasSquad && onToggle()}
         className={`flex items-center gap-2.5 py-2 px-2.5 ${row.hasSquad ? 'cursor-pointer' : ''}`}
       >
-        <div className="w-5 text-center text-[10px] font-black text-white/70 shrink-0">
-          {row.hasSquad && row.rank === 1 ? '🥇' : row.hasSquad && row.rank === 2 ? '🥈' : row.hasSquad && row.rank === 3 ? '🥉' : `#${row.rank}`}
-        </div>
+        <div className="w-5 text-center text-[10px] font-black text-white/70 shrink-0">#{row.rank}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className={`font-bold text-xs ${isMe ? 'text-accent' : row.hasSquad ? 'text-white' : 'text-white/50 italic'}`}>{row.squadName}</span>
@@ -130,31 +158,31 @@ function ParticipantRow({
         </div>
       </div>
 
-      {isOpen && row.hasSquad && (
-        <div className="px-2.5 pb-2.5">
-          {rangeQuery.isLoading && <div className="pb-1"><Spinner size={12} /></div>}
-          <div className="flex gap-1.5 flex-wrap">
-            {row.players.map((p) => {
-              // rangePoints has no entry for a player with 0 points that day —
-              // treat "known but absent" as 0, not "still loading."
-              const pts = rangePoints ? (rangePoints[p.playerId] ?? 0) : p.points
-              return (
-                <div key={p.playerId} className={`rounded-lg py-1.25 px-2.25 min-w-15 ${pts > 0 ? 'bg-accent/8' : 'bg-white/4'}`}>
-                  <div className={`text-[10px] font-bold ${pts > 0 ? 'text-accent' : 'text-white/70'}`}>{p.name.split(' ').pop()}</div>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span className="text-white/70 text-[9px] uppercase">{p.position}</span>
-                    {p.goals > 0 && <span className="text-[9px]">⚽{p.goals}</span>}
-                    {p.assists > 0 && <span className="text-[9px] text-blue-400">A{p.assists}</span>}
-                    {p.yellowCards > 0 && <span className="text-[9px]">🟨</span>}
-                    {p.redCards > 0 && <span className="text-[9px]">🟥</span>}
-                    <span className={`text-[10px] font-bold ml-0.5 ${pts > 0 ? 'text-accent' : 'text-white/70'}`}>{pts > 0 ? `+${pts}` : '0'}</span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      {isOpen && row.hasSquad && <PlayerBreakdown row={row} rangePoints={rangePoints} isLoading={isLoadingRange} />}
+    </div>
+  )
+}
+
+// Compact vertical card for the top-3 podium row. Clicking it opens the same
+// breakdown as any other row — but rendered by the parent, full-width, below
+// the podium grid rather than cramped inside a one-third-width column.
+function PodiumCard({ row, isMe, isOpen, onToggle, displayTotal }: {
+  row: RankedParticipant; isMe: boolean; isOpen: boolean; onToggle: () => void; displayTotal: number
+}) {
+  const medal = row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : '🥉'
+  return (
+    <div
+      onClick={() => row.hasSquad && onToggle()}
+      className={`flex flex-col items-center text-center gap-0.5 rounded-lg py-3 px-2 border ${isMe ? 'bg-accent/6 border-accent/20' : 'bg-white/3 border-white/7'} ${row.hasSquad ? 'cursor-pointer' : 'opacity-60'} ${isOpen ? 'ring-1 ring-accent/50' : ''}`}
+    >
+      <div className="text-lg leading-none mb-0.5">{medal}</div>
+      <div className={`font-bold text-[11px] truncate w-full ${isMe ? 'text-accent' : row.hasSquad ? 'text-white' : 'text-white/50 italic'}`}>{row.squadName}</div>
+      <div className="text-white/70 text-[9px] font-mono truncate w-full">{shortWallet(row.walletAddress)}</div>
+      <div className="mt-0.5">
+        <span className={`font-black text-sm ${row.hasSquad ? 'text-white' : 'text-white/40'}`}>{row.hasSquad ? displayTotal : '–'}</span>
+        {row.hasSquad && <span className="text-white/70 text-[9px] uppercase ml-0.5">pts</span>}
+      </div>
+      {isMe && <span className="bg-accent/12 text-accent text-[8px] font-black uppercase tracking-widest py-px px-1.5 rounded-sm mt-1">You</span>}
     </div>
   )
 }
@@ -171,24 +199,63 @@ function TournamentParticipants({
     return scoresApi.subscribeToLive({ onLeaderboard: setLiveRows })
   }, [])
 
+  const rows    = rankWithin(liveRows ?? leaderboardQuery.data ?? [], participants)
+  const openRow = rows.find((r) => r.walletAddress === openWallet) ?? null
+
+  const rangeQuery = useQuery({
+    queryKey: ['tournament-points', openWallet, startDate, endDate],
+    queryFn: () => scoresApi.pointsInRange(openWallet!, startDate.slice(0, 10), endDate.slice(0, 10)),
+    enabled: !!openWallet && !!openRow?.hasSquad,
+  })
+  const rangePoints = rangeQuery.data
+  const rangeTotal   = rangePoints ? Object.values(rangePoints).reduce((s, n) => s + n, 0) : null
+  const displayTotalFor = (row: RankedParticipant) =>
+    row.walletAddress === openWallet && rangeTotal != null ? rangeTotal : row.totalPoints
+
   if (leaderboardQuery.isLoading && !liveRows) return <div className="pt-3"><Spinner size={14} /></div>
   if (leaderboardQuery.isError && !liveRows)   return <p className="text-red-400 text-[11px] pt-3">Could not load rankings</p>
 
-  const rows = rankWithin(liveRows ?? leaderboardQuery.data ?? [], participants)
+  const top3 = rows.slice(0, 3)
+  const rest = rows.slice(3)
+  const openInTop3 = openRow && top3.some((r) => r.walletAddress === openRow.walletAddress)
 
   return (
-    <div className="flex flex-col gap-1.5 pt-3 border-t border-white/6 mt-3">
-      {rows.map((row) => (
-        <ParticipantRow
-          key={row.walletAddress}
-          row={row}
-          isMe={row.walletAddress === wallet}
-          isOpen={openWallet === row.walletAddress}
-          onToggle={() => setOpenWallet(openWallet === row.walletAddress ? null : row.walletAddress)}
-          startDate={startDate}
-          endDate={endDate}
-        />
-      ))}
+    <div className="pt-3 border-t border-white/6 mt-3">
+      {top3.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          {top3.map((row) => (
+            <PodiumCard
+              key={row.walletAddress}
+              row={row}
+              isMe={row.walletAddress === wallet}
+              isOpen={openWallet === row.walletAddress}
+              onToggle={() => setOpenWallet(openWallet === row.walletAddress ? null : row.walletAddress)}
+              displayTotal={displayTotalFor(row)}
+            />
+          ))}
+        </div>
+      )}
+
+      {openInTop3 && openRow && openRow.hasSquad && (
+        <div className="mb-2 rounded-lg bg-white/3">
+          <PlayerBreakdown row={openRow} rangePoints={rangePoints} isLoading={rangeQuery.isLoading} />
+        </div>
+      )}
+
+      <div className="flex flex-col gap-1.5">
+        {rest.map((row) => (
+          <ParticipantRow
+            key={row.walletAddress}
+            row={row}
+            isMe={row.walletAddress === wallet}
+            isOpen={openWallet === row.walletAddress}
+            onToggle={() => setOpenWallet(openWallet === row.walletAddress ? null : row.walletAddress)}
+            displayTotal={displayTotalFor(row)}
+            rangePoints={openWallet === row.walletAddress ? rangePoints : undefined}
+            isLoadingRange={openWallet === row.walletAddress && rangeQuery.isLoading}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -622,9 +689,10 @@ export default function TournamentPage() {
                   {tournaments.map((t) => {
                     const isJoined    = wallet ? t.participants.includes(wallet) : false
                     const isBusy      = busy === t.id
-                    const statusStyle = STATUS_STYLE[t.status] ?? STATUS_STYLE.open
+                    const ended       = isTournamentEnded(t)
+                    const statusStyle = STATUS_STYLE[ended ? 'ended' : t.status] ?? STATUS_STYLE.open
                     const pct         = Math.round((t.participants.length / t.maxParticipants) * 100)
-                    const canAct      = connected && hasSquad && t.status !== 'ended'
+                    const canAct      = connected && hasSquad && !ended
                     const isExpanded  = expandedId === t.id
 
                     return (
@@ -644,8 +712,8 @@ export default function TournamentPage() {
                           </div>
 
                           {isJoined ? (
-                            <button onClick={(e) => { e.stopPropagation(); handleLeave(t.id) }} disabled={isBusy}
-                              className={`py-2 px-4 rounded-lg border border-white/15 bg-transparent text-white/70 text-[11px] font-bold uppercase tracking-[0.08em] shrink-0 ${isBusy ? 'cursor-default' : 'cursor-pointer hover:border-red-400 hover:text-red-400'}`}
+                            <button onClick={(e) => { e.stopPropagation(); !ended && handleLeave(t.id) }} disabled={ended || isBusy}
+                              className={`py-2 px-4 rounded-lg border border-white/15 bg-transparent text-white/70 text-[11px] font-bold uppercase tracking-[0.08em] shrink-0 ${ended ? 'opacity-40 cursor-default' : isBusy ? 'cursor-default' : 'cursor-pointer hover:border-red-400 hover:text-red-400'}`}
                             >{isBusy ? <Spinner size={11} /> : 'Leave'}</button>
                           ) : (
                             <button onClick={(e) => { e.stopPropagation(); canAct && handleJoin(t.id) }} disabled={!canAct || isBusy}
