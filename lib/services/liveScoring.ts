@@ -375,21 +375,24 @@ export async function backfillFixtureFromHistory(
   // whatever's already stored for that wallet/date (points from a different
   // fixture the same day are left untouched), replacing — never adding to —
   // this fixture's own players' prior values.
+  //
+  // Sequential, not Promise.all: this does two round trips per wallet
+  // (read-then-write), and the Supabase pooler caps session-mode connections
+  // at 15 — firing all of them at once for a squad list bigger than ~7
+  // exhausts the pool and the whole backfill fails outright.
   const d = date ?? todayDate()
-  await Promise.all(
-    Array.from(result.entries()).map(async ([wallet, bucket]) => {
-      const existing = await getDailyPoints(wallet, d)
-      const merged = { ...(existing?.playerPoints ?? {}) }
-      for (const [playerId, points] of bucket) merged[playerId] = points
-      await upsertDailyPoints(wallet, d, merged)
+  for (const [wallet, bucket] of result) {
+    const existing = await getDailyPoints(wallet, d)
+    const merged = { ...(existing?.playerPoints ?? {}) }
+    for (const [playerId, points] of bucket) merged[playerId] = points
+    await upsertDailyPoints(wallet, d, merged)
 
-      // This player's points for this fixture are now the authoritative DB
-      // value picked up via _dbTotalsCache — drop the matching live-session
-      // entry (if any) so buildLeaderboard() doesn't add it a second time
-      // on top of the number we just persisted.
-      for (const playerId of bucket.keys()) delete state[wallet]?.[playerId]
-    })
-  )
+    // This player's points for this fixture are now the authoritative DB
+    // value picked up via _dbTotalsCache — drop the matching live-session
+    // entry (if any) so buildLeaderboard() doesn't add it a second time
+    // on top of the number we just persisted.
+    for (const playerId of bucket.keys()) delete state[wallet]?.[playerId]
+  }
 
   return { goals, cards, appearances, cleanSheets }
 }
