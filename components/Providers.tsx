@@ -4,10 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ConnectionProvider, WalletProvider, useWallet } from '@solana/wallet-adapter-react'
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom'
-import { clusterApiUrl } from '@solana/web3.js'
 import { PrivyProvider } from '@privy-io/react-auth'
+import { createSolanaRpc, createSolanaRpcSubscriptions } from '@solana/kit'
 import { Toaster } from 'react-hot-toast'
+import { SOLANA_NETWORK, SOLANA_RPC_ENDPOINT } from '@/lib/solana/network'
 import '@solana/wallet-adapter-react-ui/styles.css'
+
+const PRIVY_SOLANA_CHAIN = SOLANA_NETWORK === 'mainnet-beta' ? 'solana:mainnet' : (`solana:${SOLANA_NETWORK}` as const)
 
 const AUTOCONNECT_KEY = 'vsquad-wallet-autoconnect'
 
@@ -33,10 +36,29 @@ function WalletAutoConnectSync({ children }: { children: React.ReactNode }) {
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const endpoint = clusterApiUrl('mainnet-beta')
+  const endpoint = SOLANA_RPC_ENDPOINT
   const wallets  = useMemo(() => [new PhantomWalletAdapter()], [])
   const [queryClient] = useState(() => new QueryClient())
   const [autoConnect] = useState(() => typeof window !== 'undefined' && localStorage.getItem(AUTOCONNECT_KEY) !== 'false')
+
+  // Privy's Solana standard-wallet hooks (what our embedded-wallet signing
+  // adapter calls under the hood) need an RPC configured per chain — without
+  // it, embedded wallet creation/signing can hang instead of failing loudly.
+  // Built lazily, client-side only: rpcSubscriptions opens a real WebSocket,
+  // which must never happen during SSR (this whole file runs its top-level
+  // render once on the server too, even though it's 'use client') — building
+  // it unconditionally there is what broke wallet connect entirely.
+  const solanaConfig = useMemo(() => {
+    if (typeof window === 'undefined') return undefined
+    return {
+      rpcs: {
+        [PRIVY_SOLANA_CHAIN]: {
+          rpc: createSolanaRpc(SOLANA_RPC_ENDPOINT),
+          rpcSubscriptions: createSolanaRpcSubscriptions(SOLANA_RPC_ENDPOINT.replace(/^http/, 'ws')),
+        },
+      },
+    }
+  }, [])
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -51,8 +73,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           },
           embeddedWallets: {
             ethereum: { createOnLogin: 'off' },
-            solana: { createOnLogin: 'off' },
+            // Google-only sign-ins previously had no Solana wallet at all —
+            // 'users-without-wallets' auto-provisions one so they can pay
+            // real on-chain fees (tournament entry, etc.) too, without ever
+            // installing Phantom. Users who connect an external wallet don't
+            // get a redundant embedded one.
+            solana: { createOnLogin: 'users-without-wallets' },
           },
+          solana: solanaConfig,
         }}
       >
         <ConnectionProvider endpoint={endpoint}>

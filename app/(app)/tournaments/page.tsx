@@ -2,10 +2,14 @@
 import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { useAccountId } from '@/lib/useAccountId'
 import { useSquadStore, isComplete } from '@/store/squadStore'
 import { tournamentApi } from '@/lib/api/tournamentApi'
 import type { Tournament, CreateTournamentInput } from '@/lib/api/tournamentApi'
+import { useTournamentProgram } from '@/lib/solana/useTournamentProgram'
+import { deriveEntryPda, CREATION_FEE_LAMPORTS } from '@/lib/solana/tournamentProgram'
+import { getTreasuryAddress, SOLANA_NETWORK } from '@/lib/solana/network'
 import { scoresApi } from '@/lib/api/scoresApi'
 import type { SquadLiveScore, GoalEvent, Fixture, MatchLiveScore } from '@/lib/api/scoresApi'
 import FlagImg from '@/components/FlagImg'
@@ -41,9 +45,25 @@ function fmtDate(ms: number) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
+function pad(n: number) { return String(n).padStart(2, '0') }
+function localDateValue(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
+function localTimeValue(d: Date) { return `${pad(d.getHours())}:${pad(d.getMinutes())}` }
+
+// "Start immediately" in practice means a few minutes from now, not this
+// exact instant — the on-chain program requires start_time to be strictly in
+// the future (join_tournament also closes joining once it passes), so the
+// creator's own auto-join right after creation needs a real window to land in.
+function defaultStart() { return new Date(Date.now() + 5 * 60_000) }
+function defaultEnd()   { return new Date(Date.now() + 24 * 60 * 60_000) }
+
+function explorerTxUrl(signature: string) {
+  const cluster = SOLANA_NETWORK === 'mainnet-beta' ? '' : `?cluster=${SOLANA_NETWORK}`
+  return `https://explorer.solana.com/tx/${signature}${cluster}`
+}
+
 const EMPTY_FORM: CreateTournamentInput = {
   name: '', description: '', prize: '', status: 'open',
-  startDate: '', endDate: '', maxParticipants: 500,
+  startDate: localDateValue(defaultStart()), endDate: localDateValue(defaultEnd()), maxParticipants: 500,
 }
 
 function InputRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -546,6 +566,9 @@ export default function TournamentPage() {
   const [expandedId,  setExpandedId]  = useState<string | null>(null)
   const [showCreate,  setShowCreate]  = useState(false)
   const [form,        setForm]        = useState<CreateTournamentInput>(EMPTY_FORM)
+  const [startTime,   setStartTime]   = useState(localTimeValue(defaultStart()))
+  const [endTime,     setEndTime]     = useState(localTimeValue(defaultEnd()))
+  const [entryFeeSol, setEntryFeeSol] = useState('0.1')
   const [createError, setCreateError] = useState<string | null>(null)
 
   const wallet   = accountId ?? ''
@@ -561,13 +584,96 @@ export default function TournamentPage() {
     if (tournamentsQuery.error) console.error('[tournaments] failed to load tournaments', tournamentsQuery.error)
   }, [tournamentsQuery.error])
 
+  const program = useTournamentProgram()
+
   const createMutation = useMutation({
-    mutationFn: (input: CreateTournamentInput) => tournamentApi.create(input),
-    onSuccess: (created) => {
-      queryClient.setQueryData<Tournament[]>(['tournaments'], (prev) => [created, ...(prev ?? [])])
+    mutationFn: async (input: CreateTournamentInput) => {
+      const toastId = toast.loading('Creating tournament…')
+
+      try {
+        if (!program || !program.provider.publicKey) {
+          throw new Error('Connect a Solana wallet to create a tournament')
+        }
+        const creator = program.provider.publicKey
+
+        const entryFeeLamports = Math.round(Number(entryFeeSol) * LAMPORTS_PER_SOL)
+        if (!Number.isFinite(entryFeeLamports) || entryFeeLamports <= 0) {
+          throw new Error('Entry fee must be a positive number of SOL')
+        }
+
+        // Date + time inputs combine into a plain "YYYY-MM-DDTHH:MM" string,
+        // which Date parses in the browser's local timezone (no offset suffix).
+        const startDateTime = new Date(`${input.startDate}T${startTime}`)
+        const endDateTime = new Date(`${input.endDate}T${endTime}`)
+        if (startDateTime.getTime() <= Date.now()) {
+          throw new Error('Start time must be in the future')
+        }
+        if (endDateTime.getTime() <= startDateTime.getTime()) {
+          throw new Error('End time must be after the start time')
+        }
+
+        // 1. Backend (fixed authority) creates the Tournament on-chain.
+        toast.loading('Creating tournament on-chain…', { id: toastId })
+        const created = await tournamentApi.createOnChain({
+          name: input.name,
+          description: input.description,
+          prize: input.prize,
+          startDate: startDateTime.toISOString(),
+          endDate: endDateTime.toISOString(),
+          maxParticipants: input.maxParticipants,
+          entryFeeLamports,
+          payoutTable: [{ rank: 1, basisPoints: 10_000 }], // winner takes all, for now
+        })
+        if (!created.tournamentPda) throw new Error('Tournament was not created on-chain')
+        const tournamentPda = new PublicKey(created.tournamentPda)
+
+        // 2. One transaction, one signature: the flat 0.01 SOL creation fee to
+        // the treasury, plus the creator's own entry-fee payment (join_tournament)
+        // so they're a real, prize-eligible participant — not just listed.
+        toast.loading('Confirm the payment in your wallet…', { id: toastId })
+        const [entryPda] = deriveEntryPda(tournamentPda, creator)
+        const joinIx = await program.methods
+          .joinTournament()
+          .accounts({
+            participant: creator,
+            tournament: tournamentPda,
+            entry: entryPda,
+            systemProgram: SystemProgram.programId,
+          })
+          .instruction()
+        const feeIx = SystemProgram.transfer({
+          fromPubkey: creator,
+          toPubkey: getTreasuryAddress(),
+          lamports: CREATION_FEE_LAMPORTS,
+        })
+        const txSig = await program.provider.sendAndConfirm!(new Transaction().add(feeIx, joinIx))
+
+        // 3. Record the creator's participation off-chain.
+        toast.loading('Finishing up…', { id: toastId })
+        const tournament = await tournamentApi.join(created.id, wallet)
+
+        toast.success(
+          <span>
+            Tournament created — you&apos;re in!{' '}
+            <a href={explorerTxUrl(txSig)} target="_blank" rel="noreferrer" className="underline text-accent">
+              View transaction
+            </a>
+          </span>,
+          { id: toastId, duration: 10_000 },
+        )
+        return tournament
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to create tournament', { id: toastId })
+        throw err
+      }
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData<Tournament[]>(['tournaments'], (prev) => [updated, ...(prev ?? [])])
       setShowCreate(false)
       setForm(EMPTY_FORM)
-      toast.success('Tournament created!')
+      setStartTime(localTimeValue(defaultStart()))
+      setEndTime(localTimeValue(defaultEnd()))
+      setEntryFeeSol('0.1')
     },
     onError: (err) => {
       console.error('[tournaments] failed to create tournament', err)
@@ -576,7 +682,34 @@ export default function TournamentPage() {
   })
 
   const joinMutation = useMutation({
-    mutationFn: (id: string) => tournamentApi.join(id, wallet),
+    mutationFn: async (id: string) => {
+      const target = tournaments.find((t) => t.id === id)
+
+      // Paid tournament (has a real on-chain vault) — the participant's own
+      // wallet must sign a join_tournament transaction to pay the entry fee
+      // before we record the join off-chain. Free tournaments (no on-chain
+      // counterpart) skip this entirely, unchanged from before.
+      if (target?.tournamentPda && target.entryFeeLamports != null) {
+        if (!program || !program.provider.publicKey) {
+          throw new Error('Connect a Solana wallet to join a paid tournament (Google sign-in alone can\'t pay an entry fee)')
+        }
+        const participant = program.provider.publicKey
+        const tournamentPda = new PublicKey(target.tournamentPda)
+        const [entryPda] = deriveEntryPda(tournamentPda, participant)
+
+        await program.methods
+          .joinTournament()
+          .accounts({
+            participant,
+            tournament: tournamentPda,
+            entry: entryPda,
+            systemProgram: SystemProgram.programId,
+          })
+          .rpc()
+      }
+
+      return tournamentApi.join(id, wallet)
+    },
     onSuccess: (updated) => {
       queryClient.setQueryData<Tournament[]>(['tournaments'], (prev) => (prev ?? []).map((t) => (t.id === updated.id ? updated : t)))
       toast.success('Joined tournament!')
@@ -800,8 +933,16 @@ export default function TournamentPage() {
                 <InputRow label="Start Date *">
                   <input type="date" value={form.startDate} onChange={e => field('startDate', e.target.value)} className={`${inputClass} scheme-dark`} />
                 </InputRow>
+                <InputRow label="Start Time *">
+                  <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={`${inputClass} scheme-dark`} />
+                </InputRow>
+              </div>
+              <div className="grid grid-cols-2 max-[480px]:grid-cols-1 gap-3">
                 <InputRow label="End Date *">
                   <input type="date" value={form.endDate} onChange={e => field('endDate', e.target.value)} className={`${inputClass} scheme-dark`} />
+                </InputRow>
+                <InputRow label="End Time *">
+                  <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={`${inputClass} scheme-dark`} />
                 </InputRow>
               </div>
               <div className="grid grid-cols-2 max-[480px]:grid-cols-1 gap-3">
@@ -815,6 +956,14 @@ export default function TournamentPage() {
                   </select>
                 </InputRow>
               </div>
+              <InputRow label="Entry Fee (SOL) *">
+                <input type="number" min={0.001} step={0.001} value={entryFeeSol} onChange={e => setEntryFeeSol(e.target.value)} className={inputClass} />
+              </InputRow>
+              <p className="text-white/70 text-[11px] m-0 leading-relaxed bg-white/3 border border-white/8 rounded-[10px] p-2.5">
+                Real on-chain money: your wallet pays a flat <span className="text-accent font-bold">0.01 SOL</span> creation
+                fee plus the entry fee above (winner takes the whole pool) in one signature — you&apos;re automatically
+                entered as the first participant.
+              </p>
               {createError && <p className="text-red-400 text-xs m-0">{createError}</p>}
               <div className="flex gap-2.5 mt-1">
                 <button onClick={() => setShowCreate(false)}

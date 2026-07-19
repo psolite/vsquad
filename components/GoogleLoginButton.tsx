@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import { useMutation } from "@tanstack/react-query";
 import { usePrivy } from "@privy-io/react-auth";
+import { useWallets as useSolanaStandardWallets } from "@privy-io/react-auth/solana";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Spinner from "@/components/Spinner";
 
@@ -22,7 +23,9 @@ async function post(path: string, body?: unknown) {
 export default function GoogleLoginButton() {
   const { ready, authenticated, user, login } = usePrivy();
   const { publicKey, connected } = useWallet();
+  const { wallets: privySolanaWallets } = useSolanaStandardWallets();
   const synced = useRef<string | null>(null);
+  const linkedAddress = useRef<string | null>(null);
 
   const syncMutation = useMutation({
     mutationFn: () => post("/api/auth/sync"),
@@ -62,6 +65,22 @@ export default function GoogleLoginButton() {
     linkWalletMutation.mutate(publicKey.toBase58());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, connected, publicKey]);
+
+  // Same link-and-migrate step, but for the Privy embedded Solana wallet
+  // (auto-provisioned for Google-only sign-ins) rather than an external one —
+  // this is what actually carries a Google-only user's squad/points/tournament
+  // history over to their new real wallet address (lib/db.ts migrateAccountId).
+  useEffect(() => {
+    // Skip while an external wallet is connected — that one takes priority
+    // (useAccountId prefers it too) and already linked itself above; don't
+    // fight over `users.wallet_address` with a second, different address.
+    if (connected) return;
+    const address = privySolanaWallets[0]?.address;
+    if (!authenticated || !address || linkedAddress.current === address) return;
+    linkedAddress.current = address;
+    linkWalletMutation.mutate(address);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authenticated, connected, privySolanaWallets]);
 
   if (!ready) return null;
 

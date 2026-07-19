@@ -33,6 +33,11 @@ export interface SquadRecord {
   updatedAt: string
 }
 
+export interface TournamentPayoutShare {
+  rank: number
+  basisPoints: number
+}
+
 export interface Tournament {
   id: string
   name: string
@@ -43,6 +48,13 @@ export interface Tournament {
   endDate: string
   maxParticipants: number
   participants: string[]
+  // On-chain linking (program-docs/tournament-program-design.md §6.1) — all
+  // undefined for a tournament with no on-chain counterpart (pure off-chain,
+  // no real entry fee/escrow), which is still a fully supported mode.
+  onChainId?: number
+  tournamentPda?: string
+  entryFeeLamports?: number
+  payoutTable?: TournamentPayoutShare[]
 }
 
 export async function initDb(): Promise<void> {
@@ -67,6 +79,14 @@ export async function initDb(): Promise<void> {
       max_participants INTEGER NOT NULL DEFAULT 1000,
       participants     TEXT[] NOT NULL DEFAULT '{}'
     );
+
+    -- Links a row to its on-chain Tournament PDA (program-docs/tournament-program-design.md
+    -- §6.1). All nullable: a tournament with no on-chain counterpart (on_chain_id IS NULL)
+    -- behaves exactly as before — pure off-chain bookkeeping, no entry fee/escrow.
+    ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS on_chain_id        BIGINT;
+    ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS tournament_pda     TEXT;
+    ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS entry_fee_lamports BIGINT;
+    ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS payout_table       JSONB;
 
     CREATE TABLE IF NOT EXISTS daily_points (
       wallet_address TEXT NOT NULL,
@@ -109,6 +129,10 @@ function rowToTournament(row: Record<string, unknown>): Tournament {
     endDate:         (row.end_date as Date).toISOString(),
     maxParticipants: row.max_participants as number,
     participants:    row.participants as string[],
+    onChainId:        row.on_chain_id != null ? Number(row.on_chain_id) : undefined,
+    tournamentPda:    (row.tournament_pda as string | null) ?? undefined,
+    entryFeeLamports: row.entry_fee_lamports != null ? Number(row.entry_fee_lamports) : undefined,
+    payoutTable:      (row.payout_table as TournamentPayoutShare[] | null) ?? undefined,
   }
 }
 
@@ -189,10 +213,19 @@ export async function leaveTournament(id: string, walletAddress: string): Promis
 export async function createTournament(data: Omit<Tournament, 'id' | 'participants'>): Promise<Tournament> {
   const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
   const { rows } = await pool().query(
-    `INSERT INTO tournaments (id, name, description, prize, status, start_date, end_date, max_participants)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO tournaments (
+       id, name, description, prize, status, start_date, end_date, max_participants,
+       on_chain_id, tournament_pda, entry_fee_lamports, payout_table
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING *`,
-    [id, data.name, data.description, data.prize, data.status, data.startDate, data.endDate, data.maxParticipants]
+    [
+      id, data.name, data.description, data.prize, data.status, data.startDate, data.endDate, data.maxParticipants,
+      data.onChainId ?? null,
+      data.tournamentPda ?? null,
+      data.entryFeeLamports ?? null,
+      data.payoutTable ? JSON.stringify(data.payoutTable) : null,
+    ]
   )
   return rowToTournament(rows[0])
 }
@@ -335,4 +368,56 @@ export async function linkWalletToUser(privyUserId: string, walletAddress: strin
     [privyUserId, walletAddress]
   )
   return rows[0] ? rowToUser(rows[0]) : null
+}
+
+// A user who signed in with Google only (no wallet yet) has all their squad/
+// points/tournament history keyed by the synthetic `google:<privyUserId>' id
+// (see lib/useAccountId.ts). The moment they get a real wallet — external
+// (Phantom) or Privy's embedded Solana wallet — everything should carry over
+// to that real address instead of starting fresh under a different key.
+// Safe to call with oldId === newId (no-op) or when oldId never had any data.
+export async function migrateAccountId(oldId: string, newId: string): Promise<void> {
+  if (oldId === newId) return
+  const client = await pool().connect()
+  try {
+    await client.query('BEGIN')
+
+    // squads: only move it over if the new id doesn't already have one of its
+    // own (e.g. they'd built a squad before under a previously-connected
+    // wallet) — leaving the old row in place untouched in that case rather
+    // than guessing which one should win.
+    await client.query(
+      `UPDATE squads SET wallet_address = $2, updated_at = NOW()
+       WHERE wallet_address = $1
+         AND NOT EXISTS (SELECT 1 FROM squads WHERE wallet_address = $2)`,
+      [oldId, newId]
+    )
+
+    // daily_points: merge per-date rows (summing totals / shallow-merging
+    // per-player points) in the rare case both ids already scored on the
+    // same calendar day, then drop the now-empty old rows.
+    await client.query(
+      `INSERT INTO daily_points (wallet_address, date, player_points, total_points)
+       SELECT $2, date, player_points, total_points FROM daily_points WHERE wallet_address = $1
+       ON CONFLICT (wallet_address, date) DO UPDATE SET
+         player_points = daily_points.player_points || EXCLUDED.player_points,
+         total_points  = daily_points.total_points + EXCLUDED.total_points`,
+      [oldId, newId]
+    )
+    await client.query('DELETE FROM daily_points WHERE wallet_address = $1', [oldId])
+
+    // tournaments: swap the id everywhere it appears in a participants list.
+    await client.query(
+      `UPDATE tournaments SET participants = array_replace(participants, $1, $2)
+       WHERE $1 = ANY(participants)`,
+      [oldId, newId]
+    )
+
+    await client.query('COMMIT')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
 }
