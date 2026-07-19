@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Separate Anchor/Rust workspace (Solana tournament program) — not part
+    // of this app's lint scope.
+    "program/**",
   ]),
 ]);
 
